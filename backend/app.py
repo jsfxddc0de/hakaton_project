@@ -7,12 +7,11 @@ import os
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_sessions_and_profile'
-app.json.ensure_ascii = False  # Исправляем кодировку кириллицы в JSON API
+app.json.ensure_ascii = False  # Исправление кодировки кириллицы в JSON
 
 DATABASE = 'users.db'
 ADMIN_PASSWORD = '1488'
 
-# Список композиций (5 штук)
 SONGS = {
     1: {"title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий."},
     2: {"title": "Георгий Свиридов — Вальс (Метель)", "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием."},
@@ -21,7 +20,6 @@ SONGS = {
     5: {"title": "Ян Тирсен — Waltz of the Monsters", "desc": "Уютный, сказочный и немного загадочный неоклассический вальс."}
 }
 
-# Настройки почты (замени на свои данные)
 EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
 EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')
 EMAIL_HOST = 'smtp.gmail.com'
@@ -44,11 +42,9 @@ def send_registration_email(recipient_email, recipient_fio):
     except Exception as e:
         print(f"Ошибка при отправке письма: {e}")
 
-# Инициализация БД
 def init_db():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    # Таблица пользователей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +58,6 @@ def init_db():
             reg_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    # Таблица голосов (один пользователь — один голос. INSERT OR REPLACE перезапишет голос)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS votes (
             user_email TEXT PRIMARY KEY,
@@ -73,7 +68,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Главная страница (с голосованием)
 @app.route('/')
 def home():
     user_email = session.get('user_email')
@@ -82,16 +76,13 @@ def home():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    # Считаем голоса для каждой песни
     cursor.execute('SELECT song_id, COUNT(*) FROM votes GROUP BY song_id')
     votes_raw = cursor.fetchall()
     votes_dict = {song_id: count for song_id, count in votes_raw}
 
-    # Считаем общее количество голосов
     cursor.execute('SELECT COUNT(*) FROM votes')
     total_votes = cursor.fetchone()[0]
 
-    # Узнаем, за что проголосовал текущий пользователь (если вошел)
     user_vote = None
     if user_email:
         cursor.execute('SELECT song_id FROM votes WHERE user_email = ?', (user_email,))
@@ -101,7 +92,6 @@ def home():
 
     conn.close()
 
-    # Собираем данные по песням для отправки в шаблон HTML
     songs_data = []
     for s_id, s_info in SONGS.items():
         count = votes_dict.get(s_id, 0)
@@ -121,7 +111,6 @@ def home():
                            songs=songs_data, 
                            total_votes=total_votes)
 
-# Голосование за песню
 @app.route('/vote/<int:song_id>', methods=['POST'])
 def vote(song_id):
     user_email = session.get('user_email')
@@ -135,7 +124,6 @@ def vote(song_id):
 
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    # Записываем или обновляем голос (PRIMARY KEY гарантирует уникальность email)
     cursor.execute('INSERT OR REPLACE INTO votes (user_email, song_id) VALUES (?, ?)', (user_email, song_id))
     conn.commit()
     conn.close()
@@ -143,7 +131,6 @@ def vote(song_id):
     flash(f"Ваш голос за '{SONGS[song_id]['title']}' успешно учтен!", "success")
     return redirect(url_for('home'))
 
-# Регистрация
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     error = None
@@ -182,7 +169,6 @@ def register():
             
     return render_template('register.html', error=error)
 
-# Вход
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -205,7 +191,6 @@ def login():
             error = "Неверный Email или пароль."
     return render_template('login.html', error=error)
 
-# Выход
 @app.route('/logout')
 def logout():
     session.pop('user_email', None)
@@ -213,7 +198,6 @@ def logout():
     flash("Вы вышли из системы.", 'info')
     return redirect(url_for('home'))
 
-# Профиль
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     user_email = session.get('user_email')
@@ -240,7 +224,6 @@ def profile():
     }
     return render_template('profile.html', user=user_dict)
 
-# Вход в админку
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     error = None
@@ -249,7 +232,7 @@ def admin_login():
             session['admin_logged_in'] = True
             return redirect(url_for('admin'))
         else:
-            error = 'Неверный пароль админа.'
+            error = 'Неверный пароль admin.'
     return render_template('admin_login.html', error=error)
 
 @app.route('/admin/logout')
@@ -257,7 +240,7 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
-# Админка
+# ОБНОВЛЕННАЯ АДМИНКА
 @app.route('/admin')
 def admin():
     if not session.get('admin_logged_in'):
@@ -265,27 +248,82 @@ def admin():
         
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, fio, class_group, email, password, phone, wishes, ip_address, reg_time FROM users ORDER BY id DESC')
-    users = cursor.fetchall()
-    conn.close()
-    return render_template('admin.html', users=users)
+    
+    # 1. Загружаем пользователей И их голоса (LEFT JOIN)
+    cursor.execute('''
+        SELECT u.id, u.fio, u.class_group, u.email, u.password, u.phone, u.wishes, u.ip_address, u.reg_time, v.song_id 
+        FROM users u 
+        LEFT JOIN votes v ON u.email = v.user_email 
+        ORDER BY u.id DESC
+    ''')
+    users_raw = cursor.fetchall()
+    
+    # Конвертируем сырые данные пользователей в удобный список словарей
+    users = []
+    for u in users_raw:
+        song_id = u[9]
+        song_title = SONGS.get(song_id, {}).get('title', 'Не голосовал')
+        users.append({
+            'id': u[0], 'fio': u[1], 'class_group': u[2], 'email': u[3],
+            'password': u[4], 'phone': u[5], 'wishes': u[6], 'ip_address': u[7],
+            'reg_time': u[8], 'voted_song': song_title
+        })
 
-# API
+    # 2. Вычисляем общую статистику голосов для отображения в админке
+    cursor.execute('SELECT song_id, COUNT(*) FROM votes GROUP BY song_id')
+    votes_raw = cursor.fetchall()
+    votes_dict = {song_id: count for song_id, count in votes_raw}
+    
+    cursor.execute('SELECT COUNT(*) FROM votes')
+    total_votes = cursor.fetchone()[0]
+    
+    stats = []
+    for s_id, s_info in SONGS.items():
+        count = votes_dict.get(s_id, 0)
+        percent = round((count / total_votes * 100), 1) if total_votes > 0 else 0
+        stats.append({
+            'title': s_info['title'],
+            'votes': count,
+            'percent': percent
+        })
+
+    conn.close()
+    return render_template('admin.html', users=users, stats=stats, total_votes=total_votes)
+
+# ОБНОВЛЕННОЕ API
 @app.route('/api/users')
 def api_users():
     if not session.get('admin_logged_in'):
-        return jsonify({'error': 'Unauthorized'}), 401
+        return jsonify({'error': 'Unauthorized', 'message': 'Admin login required'}), 401
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, fio, class_group, email, phone, wishes, reg_time FROM users ORDER BY id DESC')
+    # LEFT JOIN для получения информации о песне
+    cursor.execute('''
+        SELECT u.id, u.fio, u.class_group, u.email, u.phone, u.wishes, u.reg_time, v.song_id 
+        FROM users u 
+        LEFT JOIN votes v ON u.email = v.user_email 
+        ORDER BY u.id DESC
+    ''')
     users_raw = cursor.fetchall()
     conn.close()
 
-    users_json = [{
-        'id': u[0], 'fio': u[1], 'class_group': u[2], 'email': u[3],
-        'phone': u[4], 'wishes': u[5], 'registration_time': u[6]
-    } for u in users_raw]
+    users_json = []
+    for u in users_raw:
+        song_id = u[7]
+        song_title = SONGS.get(song_id, {}).get('title') if song_id else None
+        
+        users_json.append({
+            'id': u[0],
+            'fio': u[1],
+            'class_group': u[2],
+            'email': u[3],
+            'phone': u[4],
+            'wishes': u[5],
+            'registration_time': u[6],
+            'voted_song_id': song_id,          # ID проголосованной композиции (или null)
+            'voted_song_title': song_title     # Название проголосованной композиции (или null)
+        })
     
     return jsonify(users_json)
 

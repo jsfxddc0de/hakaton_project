@@ -8,6 +8,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
+        <!-- Шапка -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-3xl font-extrabold text-blue-400 tracking-wide">Панель администратора</h1>
             <div class="flex gap-3">
@@ -22,10 +23,34 @@
                 </a>
             </div>
         </div>
+
+        <!-- 1. НОВЫЙ БЛОК: СТАТИСТИКА ГОЛОСОВАНИЯ -->
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-8 shadow-xl">
+            <h2 class="text-xl font-bold text-orange-400 mb-4 flex items-center gap-2">
+                <span>📊</span> Результаты голосования за музыку
+            </h2>
+            <p class="text-xs text-gray-400 mb-4 font-mono">Всего отдано голосов: <span class="text-white font-bold">{{ total_votes }}</span></p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for song in stats %}
+                <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
+                    <h4 class="text-sm font-bold text-gray-200 mb-2 truncate" title="{{ song.title }}">{{ song.title }}</h4>
+                    <div class="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden border border-gray-700">
+                        <div class="bg-orange-500 h-full rounded-full" style="width: {{ song.percent }}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-400 mt-2 font-mono">
+                        <span>{{ song.votes }} голосов</span>
+                        <span class="text-orange-400 font-bold">{{ song.percent }}%</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
         
+        <!-- 2. ТАБЛИЦА С УЧАСТНИКАМИ -->
         <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
             <div class="p-4 bg-gray-750 border-b border-gray-700">
-                <h3 class="font-semibold text-gray-300">База данных пользователей (SQLite)</h3>
+                <h3 class="font-semibold text-gray-300">База данных участников (SQLite)</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -35,8 +60,10 @@
                             <th class="p-4">ФИО</th>
                             <th class="p-4">Класс/Группа</th>
                             <th class="p-4">Email</th>
-                            <th class="p-4">Пароль (Plaintext)</th>
+                            <th class="p-4">Пароль</th>
                             <th class="p-4">Телефон</th>
+                            <!-- НОВАЯ КОЛОНКА -->
+                            <th class="p-4 text-orange-400">Голос</th>
                             <th class="p-4">Пожелания/Вопросы</th>
                             <th class="p-4">IP-Адрес</th>
                             <th class="p-4">Дата и время</th>
@@ -44,24 +71,38 @@
                     </thead>
                     <tbody class="divide-y divide-gray-700">
                         {% for user in users %}
-                        <tr class="hover:bg-gray-750 transition duration-150">
-                            <td class="p-4 text-blue-400 font-mono font-bold">{{ user[0] }}</td>
-                            <td class="p-4 font-semibold text-white">{{ user[1] }}</td>
-                            <td class="p-4 text-gray-400 text-sm">{{ user[2] }}</td>
-                            <td class="p-4 text-green-400 font-mono text-sm">{{ user[3] }}</td>
-                            <td class="p-4 text-gray-400 font-mono text-sm">{{ user[4] }}</td>
-                            <td class="p-4 text-yellow-400 font-mono text-sm">{{ user[5] if user[5] else 'N/A' }}</td>
-                            <td class="p-4 text-purple-400 text-sm max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{{ user[6] if user[6] else 'N/A' }}</td>
+                        <tr class="hover:bg-gray-750 transition duration-150 text-sm">
+                            <td class="p-4 text-blue-400 font-mono font-bold">{{ user.id }}</td>
+                            <td class="p-4 font-semibold text-white">{{ user.fio }}</td>
+                            <td class="p-4 text-gray-350">{{ user.class_group }}</td>
+                            <td class="p-4 text-green-400 font-mono text-xs">{{ user.email }}</td>
+                            <td class="p-4 text-gray-500 font-mono text-xs">{{ user.password }}</td>
+                            <td class="p-4 text-yellow-500 font-mono text-xs">{{ user.phone if user.phone else '—' }}</td>
+                            
+                            <!-- ЗНАЧЕНИЕ ГОЛОСА -->
                             <td class="p-4">
-                                <span class="bg-green-900/30 text-green-400 px-2 py-1 rounded font-mono text-xs border border-green-800/50">
-                                    {{ user[7] }}
+                                {% if user.voted_song != "Не голосовал" %}
+                                    <span class="bg-orange-950/50 text-orange-400 px-2 py-1 rounded text-xs border border-orange-900/60 font-semibold inline-block max-w-[150px] truncate" title="{{ user.voted_song }}">
+                                        {{ user.voted_song }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-500 italic text-xs">Не голосовал</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="p-4 text-purple-400 text-xs max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="{{ user.wishes if user.wishes else '' }}">
+                                {{ user.wishes if user.wishes else '—' }}
+                            </td>
+                            <td class="p-4">
+                                <span class="bg-green-900/30 text-green-400 px-2 py-1 rounded font-mono text-[10px] border border-green-800/50">
+                                    {{ user.ip_address }}
                                 </span>
                             </td>
-                            <td class="p-4 text-xs text-gray-500 font-mono">{{ user[8] }}</td>
+                            <td class="p-4 text-xs text-gray-500 font-mono">{{ user.reg_time }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="9" class="p-8 text-center text-gray-500">Пользователей пока нет. Зарегистрируйте кого-нибудь!</td>
+                            <td colspan="10" class="p-8 text-center text-gray-500">Пользователей пока нет. Зарегистрируйте кого-нибудь!</td>
                         </tr>
                         {% endfor %}
                     </tbody>
