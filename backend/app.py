@@ -3,97 +3,147 @@ import sqlite3
 import smtplib
 import ssl
 from email.message import EmailMessage
-import os # Для получения Email-пароля из переменных окружения, безопаснее
+import os
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_key_for_sessions_and_profile' # Твой секретный ключ
-
-# --- ДОБАВЬ ЭТУ СТРОКУ СЮДА ---
-app.json.ensure_ascii = False 
-# ------------------------------
+app.secret_key = 'super_secret_key_for_sessions_and_profile'
+app.json.ensure_ascii = False  # Исправляем кодировку кириллицы в JSON API
 
 DATABASE = 'users.db'
 ADMIN_PASSWORD = '1488'
 
-# --- НАСТРОЙКИ EMAIL ---
-# ВАЖНО: В реальных проектах эти данные хранят в переменных окружения или файле конфигурации,
-# а не прямо в коде! Для простоты демонстрации оставим тут.
-# Для Gmail нужно будет включить "Пароли приложений" если включена 2ФА.
-EMAIL_SENDER = 'gika.savinov@gmail.com' # Email, с которого будут отправляться письма
-# Пароль для вашего email. Для Gmail это "Пароль приложения".
-EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'j012qewj12') 
+# Список композиций (5 штук)
+SONGS = {
+    1: {"title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий."},
+    2: {"title": "Георгий Свиридов — Вальс (Метель)", "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием."},
+    3: {"title": "П. И. Чайковский — Октябрь. Осенняя песнь", "desc": "Глубокая и поэтичная классика, передающая тихую грусть золотой осени."},
+    4: {"title": "Антонио Вивальди — Осень (Времена года)", "desc": "Энергичное и праздничное барокко, воспевающее сбор урожая и радость."},
+    5: {"title": "Ян Тирсен — Waltz of the Monsters", "desc": "Уютный, сказочный и немного загадочный неоклассический вальс."}
+}
+
+# Настройки почты (замени на свои данные)
+EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
+EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465 # SSL порт
+EMAIL_PORT = 465
 
-# Функция для отправки Email
 def send_registration_email(recipient_email, recipient_fio):
-    if not EMAIL_PASSWORD:
-        print("Ошибка: Пароль для отправки Email не задан. Письмо не будет отправлено.")
+    if not EMAIL_PASSWORD or EMAIL_PASSWORD == 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ':
+        print("Внимание: Настройка почты не завершена. Письмо не отправлено.")
         return
-
     msg = EmailMessage()
     msg['Subject'] = 'Успешная регистрация на Осенний Бал 2026!'
     msg['From'] = EMAIL_SENDER
     msg['To'] = recipient_email
-    
-    msg.set_content(f"""
-    Здравствуйте, {recipient_fio}!
-
-    Поздравляем! Ваша заявка на участие в Осеннем Бале 2026 успешно принята.
-
-    Дата: 31 октября 2026 года
-    Время: 18:00
-    Место: Главный Колонный Зал Торжеств
-
-    Ваши данные для входа в личный кабинет:
-    Email: {recipient_email}
-    (Пароль тот, который вы указывали при регистрации)
-
-    Вы можете изменить необязательные данные в своем профиле на сайте.
-
-    До встречи на балу!
-    С уважением,
-    Оргкомитет Осеннего Бала
-    """)
-
+    msg.set_content(f"Здравствуйте, {recipient_fio}!\n\nВаша заявка на Осенний Бал успешно принята.\nВы можете войти на сайт, используя свой Email и проголосовать за любимую музыку!")
     try:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT, context=context) as smtp:
             smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
             smtp.send_message(msg)
-        print(f"Email успешно отправлен на {recipient_email}")
     except Exception as e:
-        print(f"Ошибка при отправке Email на {recipient_email}: {e}")
+        print(f"Ошибка при отправке письма: {e}")
 
-# Функция для подключения к БД и создания таблицы
+# Инициализация БД
 def init_db():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    # Обновленная таблица пользователей
+    # Таблица пользователей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fio TEXT NOT NULL,
             class_group TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE, -- Email теперь уникальный и используется для входа
+            email TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
-            phone TEXT,               -- Необязательное
-            wishes TEXT,              -- Необязательное
+            phone TEXT,
+            wishes TEXT,
             ip_address TEXT NOT NULL,
             reg_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # Таблица голосов (один пользователь — один голос. INSERT OR REPLACE перезапишет голос)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS votes (
+            user_email TEXT PRIMARY KEY,
+            song_id INTEGER NOT NULL,
+            FOREIGN KEY(user_email) REFERENCES users(email)
         )
     ''')
     conn.commit()
     conn.close()
 
-# 1. Главная страница (Осенний бал)
+# Главная страница (с голосованием)
 @app.route('/')
 def home():
     user_email = session.get('user_email')
     user_fio = session.get('user_fio')
-    return render_template('index.html', user_email=user_email, user_fio=user_fio)
 
-# 2. Регистрация участника
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # Считаем голоса для каждой песни
+    cursor.execute('SELECT song_id, COUNT(*) FROM votes GROUP BY song_id')
+    votes_raw = cursor.fetchall()
+    votes_dict = {song_id: count for song_id, count in votes_raw}
+
+    # Считаем общее количество голосов
+    cursor.execute('SELECT COUNT(*) FROM votes')
+    total_votes = cursor.fetchone()[0]
+
+    # Узнаем, за что проголосовал текущий пользователь (если вошел)
+    user_vote = None
+    if user_email:
+        cursor.execute('SELECT song_id FROM votes WHERE user_email = ?', (user_email,))
+        row = cursor.fetchone()
+        if row:
+            user_vote = row[0]
+
+    conn.close()
+
+    # Собираем данные по песням для отправки в шаблон HTML
+    songs_data = []
+    for s_id, s_info in SONGS.items():
+        count = votes_dict.get(s_id, 0)
+        percent = round((count / total_votes * 100), 1) if total_votes > 0 else 0
+        songs_data.append({
+            'id': s_id,
+            'title': s_info['title'],
+            'desc': s_info['desc'],
+            'votes': count,
+            'percent': percent,
+            'is_current': (s_id == user_vote)
+        })
+
+    return render_template('index.html', 
+                           user_email=user_email, 
+                           user_fio=user_fio, 
+                           songs=songs_data, 
+                           total_votes=total_votes)
+
+# Голосование за песню
+@app.route('/vote/<int:song_id>', methods=['POST'])
+def vote(song_id):
+    user_email = session.get('user_email')
+    if not user_email:
+        flash("Чтобы проголосовать, войдите в систему или зарегистрируйтесь!", "warning")
+        return redirect(url_for('login'))
+    
+    if song_id not in SONGS:
+        flash("Неверный выбор песни.", "error")
+        return redirect(url_for('home'))
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    # Записываем или обновляем голос (PRIMARY KEY гарантирует уникальность email)
+    cursor.execute('INSERT OR REPLACE INTO votes (user_email, song_id) VALUES (?, ?)', (user_email, song_id))
+    conn.commit()
+    conn.close()
+
+    flash(f"Ваш голос за '{SONGS[song_id]['title']}' успешно учтен!", "success")
+    return redirect(url_for('home'))
+
+# Регистрация
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     error = None
@@ -102,51 +152,37 @@ def register():
         class_group = request.form['class_group'].strip()
         email = request.form['email'].strip()
         password = request.form['password']
-        phone = request.form.get('phone', '').strip() # Необязательное поле
-        wishes = request.form.get('wishes', '').strip() # Необязательное поле
-        
+        phone = request.form.get('phone', '').strip()
+        wishes = request.form.get('wishes', '').strip()
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
 
-        # Проверка обязательных полей
         if not fio or not class_group or not email or not password:
-            error = "Пожалуйста, заполните все обязательные поля (ФИО, Класс/Группа, Email, Пароль)."
+            error = "Пожалуйста, заполните все обязательные поля."
             return render_template('register.html', error=error)
 
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        
-        # Проверяем, существует ли уже пользователь с таким Email
         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
         if cursor.fetchone():
             error = "Пользователь с таким Email уже зарегистрирован."
             conn.close()
         else:
-            try:
-                # Вставляем нового пользователя со всеми полями
-                cursor.execute(
-                    '''INSERT INTO users (fio, class_group, email, password, phone, wishes, ip_address) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                    (fio, class_group, email, password, phone, wishes, ip_address)
-                )
-                conn.commit()
-                
-                # Отправляем уведомление на Email
-                send_registration_email(email, fio)
-
-                # Автоматически авторизуем пользователя после успешной регистрации
-                session['user_email'] = email
-                session['user_fio'] = fio # Сохраняем ФИО для отображения на главной
-                flash(f"Заявка успешно принята, {fio}! Письмо с подтверждением отправлено на {email}.", 'success')
-                return redirect(url_for('home'))
-            except Exception as e:
-                conn.rollback() # Откатываем изменения при ошибке
-                error = f"Произошла ошибка при регистрации: {e}"
-            finally:
-                conn.close()
+            cursor.execute(
+                'INSERT INTO users (fio, class_group, email, password, phone, wishes, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+                (fio, class_group, email, password, phone, wishes, ip_address)
+            )
+            conn.commit()
+            conn.close()
+            
+            send_registration_email(email, fio)
+            session['user_email'] = email
+            session['user_fio'] = fio
+            flash("Вы успешно зарегистрировались!", "success")
+            return redirect(url_for('home'))
             
     return render_template('register.html', error=error)
 
-# 3. Вход пользователя
+# Вход
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -161,91 +197,67 @@ def login():
         conn.close()
         
         if user_data:
-            session['user_email'] = user_data[1] # Сохраняем email в сессии
-            session['user_fio'] = user_data[0] # Сохраняем ФИО в сессии
-            flash(f"Добро пожаловать, {user_data[0]}!", 'info')
+            session['user_email'] = user_data[1]
+            session['user_fio'] = user_data[0]
+            flash(f"Рады видеть вас снова, {user_data[0]}!", 'info')
             return redirect(url_for('home'))
         else:
             error = "Неверный Email или пароль."
-            
     return render_template('login.html', error=error)
 
-# 4. Выход пользователя
+# Выход
 @app.route('/logout')
 def logout():
     session.pop('user_email', None)
     session.pop('user_fio', None)
-    flash("Вы вышли из аккаунта.", 'info')
+    flash("Вы вышли из системы.", 'info')
     return redirect(url_for('home'))
 
-# 5. Профиль пользователя (просмотр и редактирование)
+# Профиль
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     user_email = session.get('user_email')
     if not user_email:
-        flash("Пожалуйста, войдите, чтобы получить доступ к профилю.", 'warning')
         return redirect(url_for('login'))
 
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
     if request.method == 'POST':
-        # Обновляем только необязательные поля
         new_phone = request.form.get('phone', '').strip()
         new_wishes = request.form.get('wishes', '').strip()
-        
-        try:
-            cursor.execute(
-                'UPDATE users SET phone = ?, wishes = ? WHERE email = ?',
-                (new_phone, new_wishes, user_email)
-            )
-            conn.commit()
-            flash("Ваш профиль успешно обновлен!", 'success')
-        except Exception as e:
-            conn.rollback()
-            flash(f"Ошибка при обновлении профиля: {e}", 'error')
+        cursor.execute('UPDATE users SET phone = ?, wishes = ? WHERE email = ?', (new_phone, new_wishes, user_email))
+        conn.commit()
+        flash("Профиль успешно сохранен!", 'success')
 
-    # Всегда получаем актуальные данные пользователя для отображения
     cursor.execute('SELECT fio, class_group, email, phone, wishes FROM users WHERE email = ?', (user_email,))
     user_data = cursor.fetchone()
     conn.close()
 
-    if not user_data: # Если по какой-то причине пользователь не найден (хотя должен быть)
-        session.pop('user_email', None)
-        session.pop('user_fio', None)
-        flash("Ошибка: Ваш профиль не найден. Пожалуйста, войдите снова.", 'error')
-        return redirect(url_for('login'))
-
     user_dict = {
-        'fio': user_data[0],
-        'class_group': user_data[1],
-        'email': user_data[2],
-        'phone': user_data[3] if user_data[3] else '', # Пустая строка вместо None
-        'wishes': user_data[4] if user_data[4] else ''
+        'fio': user_data[0], 'class_group': user_data[1], 'email': user_data[2],
+        'phone': user_data[3] if user_data[3] else '', 'wishes': user_data[4] if user_data[4] else ''
     }
     return render_template('profile.html', user=user_dict)
 
-
-# 6. Вход в админку (пароль 1488)
+# Вход в админку
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     error = None
     if request.method == 'POST':
-        entered_password = request.form.get('password')
-        if entered_password == ADMIN_PASSWORD:
+        if request.form.get('password') == ADMIN_PASSWORD:
             session['admin_logged_in'] = True
             return redirect(url_for('admin'))
         else:
-            error = 'Неверный код-пароль!'
+            error = 'Неверный пароль админа.'
     return render_template('admin_login.html', error=error)
 
-# 7. Выход из админки
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
-# 8. Сама админка
+# Админка
 @app.route('/admin')
 def admin():
     if not session.get('admin_logged_in'):
@@ -253,36 +265,27 @@ def admin():
         
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    # Выбираем все поля для админ-панели
     cursor.execute('SELECT id, fio, class_group, email, password, phone, wishes, ip_address, reg_time FROM users ORDER BY id DESC')
     users = cursor.fetchall()
     conn.close()
     return render_template('admin.html', users=users)
 
-# 9. API для получения данных о пользователях в JSON (только для авторизованных админов)
+# API
 @app.route('/api/users')
 def api_users():
     if not session.get('admin_logged_in'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Admin login required'}), 401
+        return jsonify({'error': 'Unauthorized'}), 401
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    # Выбираем все поля, КРОМЕ ПАРОЛЯ И IP (безопасность)
     cursor.execute('SELECT id, fio, class_group, email, phone, wishes, reg_time FROM users ORDER BY id DESC')
     users_raw = cursor.fetchall()
     conn.close()
 
-    users_json = []
-    for user_tuple in users_raw:
-        users_json.append({
-            'id': user_tuple[0],
-            'fio': user_tuple[1],
-            'class_group': user_tuple[2],
-            'email': user_tuple[3],
-            'phone': user_tuple[4],
-            'wishes': user_tuple[5],
-            'registration_time': user_tuple[6]
-        })
+    users_json = [{
+        'id': u[0], 'fio': u[1], 'class_group': u[2], 'email': u[3],
+        'phone': u[4], 'wishes': u[5], 'registration_time': u[6]
+    } for u in users_raw]
     
     return jsonify(users_json)
 
