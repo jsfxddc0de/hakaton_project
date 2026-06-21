@@ -6,7 +6,11 @@ from email.message import EmailMessage
 import os # Для получения Email-пароля из переменных окружения, безопаснее
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_key_for_sessions_and_profile' # Секретный ключ для сессий
+app.secret_key = 'super_secret_key_for_sessions_and_profile' # Твой секретный ключ
+
+# --- ДОБАВЬ ЭТУ СТРОКУ СЮДА ---
+app.json.ensure_ascii = False 
+# ------------------------------
 
 DATABASE = 'users.db'
 ADMIN_PASSWORD = '1488'
