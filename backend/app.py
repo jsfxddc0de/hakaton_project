@@ -1,51 +1,87 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
-from werkzeug.utils import secure_filename
+import sys
+import os
+
+# Добавляем путь в самом-самом начале
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, status
+# ... и только потом:
+from models import init_db, SessionLocal, User, Event, Application, Vote
+
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, status
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+import os
+import shutil
 import smtplib
 import ssl
 from email.message import EmailMessage
-import os
+from jinja2 import pass_context
 
-# Импортируем наши Модели и методы инициализации из models.py
-from models import init_db, User, Event, Application, Vote
+# Импортируем бд и SQLAlchemy модели
+from models import init_db, SessionLocal, User, Event, Application, Vote
 
-app = Flask(__name__)
-app.secret_key = 'super_secret_key_for_sessions_and_profile'
-app.json.ensure_ascii = False
+# Инициализируем FastAPI с кастомным адресом для документации Swagger
+app = FastAPI(
+    title="Осенний Бал 2026 API",
+    description="Интерактивная спецификация API для управления участниками и заявками.",
+    version="1.2.0",
+    docs_url="/api/users/docs",         # Твой адрес документации Swagger!
+    openapi_url="/api/users/swagger.json"
+)
+
+# Поддержка сессий (cookie-session)
+app.add_middleware(SessionMiddleware, secret_key="super_secret_key_for_sessions_and_profile")
+
+# Монтируем статические файлы
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Настройки шаблонов Jinja2
+templates = Jinja2Templates(directory="templates")
+
+# --- СОВМЕСТИМОСТЬ С ШАБЛОНАМИ FLASK (Flash & url_for) ---
+def flash(request: Request, message: str, category: str = "info"):
+    if "_flashes" not in request.session:
+        request.session["_flashes"] = []
+    request.session["_flashes"].append((category, message))
+
+@pass_context
+def get_flashed_messages(context):
+    request = context.get('request')
+    if not request or "_flashes" not in request.session:
+        return []
+    return request.session.pop("_flashes", [])
+
+@pass_context
+def compat_url_for(context, name: str, **pathparams):
+    request = context['request']
+    if name == 'static' and 'filename' in pathparams:
+        pathparams['path'] = pathparams.pop('filename')
+    return request.url_for(name, **pathparams)
+
+# Регистрируем глобальные функции для Jinja2
+templates.env.globals['get_flashed_messages'] = get_flashed_messages
+templates.env.globals['url_for'] = compat_url_for
+
+# Константы музыки
+SONGS = {
+    1: {"title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", "desc": "Торжественный вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Chopin_Waltz_in_C_sharp_minor_Op._64_No._2_performed_by_Luke_Faulkner.mp3"},
+    2: {"title": "Георгий Свиридов — Вальс (Метель)", "desc": "Кружащийся, яркий русский вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Tchaikovsky_-_Waltz_of_the_Flowers_-_Peabody_Symphony_Orchestra.mp3"},
+    3: {"title": "П. И. Чайковский — Октябрь. Осенняя песнь", "desc": "Тихая грусть золотой осени.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Chopin_Nocturne_Op._9_No._2_in_E_flat_major_performed_by_Luke_Faulkner.mp3"},
+    4: {"title": "Антонио Вивальди — Осень (Времена года)", "desc": "Праздничное барокко.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/07_-_Vivaldi_Autumn_mvt_1_Allegro_-_John_Harrison_violin.mp3"},
+    5: {"title": "Ян Тирсен — Waltz of the Monsters", "desc": "Загадочный неоклассический вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Erik_Satie_-_Gymnopedie_No._1_-_arr._violin_and_piano.mp3"}
+}
 
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
-SONGS = {
-    1: {
-        "title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", 
-        "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий.",
-        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Chopin_Waltz_in_C_sharp_minor_Op._64_No._2_performed_by_Luke_Faulkner.mp3"
-    },
-    2: {
-        "title": "Георгий Свиридов — Вальс (Метель)", 
-        "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием.",
-        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Tchaikovsky_-_Waltz_of_the_Flowers_-_Peabody_Symphony_Orchestra.mp3"
-    },
-    3: {
-        "title": "П. И. Чайковский — Октябрь. Осенняя песнь", 
-        "desc": "Глубокая и поэтичная классика, передающая тихую грусть золотой осени.",
-        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Chopin_Nocturne_Op._9_No._2_in_E_flat_major_performed_by_Luke_Faulkner.mp3"
-    },
-    4: {
-        "title": "Антонио Вивальди — Осень (Времена года)", 
-        "desc": "Энергичное и праздничное барокко, воспевающее сбор урожая и радость.",
-        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/07_-_Vivaldi_Autumn_mvt_1_Allegro_-_John_Harrison_violin.mp3"
-    },
-    5: {
-        "title": "Ян Тирсен — Waltz of the Monsters", 
-        "desc": "Уютный, сказочный и немного загадочный неоклассический вальс.",
-        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Erik_Satie_-_Gymnopedie_No._1_-_arr._violin_and_piano.mp3"
-    }
-}
-
-# Настройки почты (замени на свои данные)
+# Настройки почты
 EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
 EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')
 ADMIN_EMAIL = 'АДМИНИСТРАТОР_EMAIL@gmail.com'
@@ -55,9 +91,16 @@ EMAIL_PORT = 465
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Dependency для инъекции сессий БД в роуты
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 def send_email(to_email, subject, body):
     if not EMAIL_PASSWORD or EMAIL_PASSWORD == 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ':
-        print(f"Внимание: Настройка почты пропущена. Письмо на {to_email} не отправлено.")
         return False
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -76,7 +119,7 @@ def send_email(to_email, subject, body):
 
 def notify_admin_new_app(fio, event_title, email):
     subject = f"🔔 Новая заявка на {event_title}: {fio}"
-    body = f"Участник {fio} ({email}) подал заявку на мероприятие '{event_title}'.\nУправление заявками доступно в админке: http://127.0.0.1:5000/admin"
+    body = f"Участник {fio} ({email}) подал заявку на мероприятие '{event_title}'.\nУправление доступно в админке: http://127.0.0.1:5000/admin"
     send_email(ADMIN_EMAIL, subject, body)
 
 def notify_user_app_status(email, fio, event_title, status):
@@ -86,320 +129,331 @@ def notify_user_app_status(email, fio, event_title, status):
     send_email(email, subject, body)
 
 
-# --- РОУТИНГ И КОНТРОЛЛЕРЫ (VIEWS) ---
+# --- REST API: СХЕМЫ ДАННЫХ (Pydantic) ДЛЯ SWAGGER ---
+class ApplicationSchema(BaseModel):
+    app_id: int
+    event_title: str
+    status: str
+    created_at: str
 
-@app.route('/')
-def home():
-    user_email = session.get('user_email')
-    user_fio = session.get('user_fio')
-    user_role = session.get('user_role')
+class UserSchema(BaseModel):
+    id: int
+    fio: str
+    class_group: str
+    email: EmailStr
+    phone: Optional[str] = None
+    avatar_url: str
+    registration_time: str
+    role: str
+    applications: List[ApplicationSchema]
+
+def serialize_user(u: User, request: Request) -> dict:
+    user_apps = [{
+        'app_id': a.id,
+        'event_title': a.event.title,
+        'status': a.status,
+        'created_at': a.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    } for a in u.applications]
+
+    avatar_url = str(request.url_for('static', path=f'uploads/{u.avatar}')) if u.avatar else f"https://ui-avatars.com/api/?name={u.fio}&background=random&size=128"
+
+    return {
+        'id': u.id, 'fio': u.fio, 'class_group': u.class_group, 'email': u.email,
+        'phone': u.phone, 'avatar_url': avatar_url, 'registration_time': u.reg_time.strftime('%Y-%m-%d %H:%M:%S'),
+        'role': u.role, 'applications': user_apps
+    }
+
+def verify_admin(request: Request):
+    return request.session.get('user_role') == 'admins'
+
+
+# --- РОУТЫ И ОТОБРАЖЕНИЕ (HTML PAGES) ---
+
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    user_fio = request.session.get('user_fio')
+    user_role = request.session.get('user_role')
     user_avatar = None
-    
+
     if user_email:
-        user = User.get_by_email(user_email)
+        user = db.query(User).filter(User.email == user_email).first()
         if user:
             user_avatar = user.avatar
             user_fio = user.fio
             user_role = user.role
-            session['user_role'] = user.role
+            request.session['user_role'] = user.role
 
-    # Музыкальная статистика
-    songs_stats, total_votes = Vote.get_stats(SONGS)
-    
-    # Узнаем выбор текущего пользователя
-    user_vote = Vote.get_user_vote(user_email) if user_email else None
-    
-    # Добавляем к каждой песне отметку о выборе
-    for song in songs_stats:
-        song['is_current'] = (song['id'] == user_vote)
+    # Музыкальные результаты
+    total_votes = db.query(Vote).count()
+    votes_raw = db.query(Vote.song_id, func.count(Vote.user_email)).group_by(Vote.song_id).all()
+    votes_dict = {song_id: count for song_id, count in votes_raw}
 
-    return render_template('index.html', 
-                           user_email=user_email, 
-                           user_fio=user_fio, 
-                           user_role=user_role,
-                           user_avatar=user_avatar,
-                           songs=songs_stats, 
-                           total_votes=total_votes)
+    user_vote = db.query(Vote).filter(Vote.user_email == user_email).first() if user_email else None
+    user_vote_id = user_vote.song_id if user_vote else None
 
-@app.route('/vote/<int:song_id>', methods=['POST'])
-def vote(song_id):
-    user_email = session.get('user_email')
-    user_role = session.get('user_role')
-    
-    if not user_email:
-        flash("Пожалуйста, войдите в систему!", "warning")
-        return redirect(url_for('login'))
-    
-    if user_role == 'candidate':
-        flash("Голосование доступно только подтвержденным участникам (роль User)!", "error")
-        return redirect(url_for('home'))
-
-    Vote.set_vote(user_email, song_id)
-    flash("Ваш голос успешно учтен!", "success")
-    return redirect(url_for('home'))
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    error = None
-    if request.method == 'POST':
-        fio = request.form['fio'].strip()
-        class_group = request.form['class_group'].strip()
-        email = request.form['email'].strip()
-        password = request.form['password']
-        phone = request.form.get('phone', '').strip()
-        wishes = request.form.get('wishes', '').strip()
-        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-
-        if not fio or not class_group or not email or not password:
-            error = "Пожалуйста, заполните все обязательные поля."
-            return render_template('register.html', error=error)
-
-        # Создаем пользователя через модель User
-        success = User.create(fio, class_group, email, password, phone, ip_address)
-        if not success:
-            error = "Пользователь с таким Email уже зарегистрирован."
-        else:
-            # Создаем заявку на Осенний Бал через модель Application
-            Application.create(email, 1, wishes, 'pending')
-            notify_admin_new_app(fio, "Осенний Бал 2026", email)
-            
-            session['user_email'] = email
-            session['user_fio'] = fio
-            session['user_role'] = 'candidate'
-            
-            flash("Вы успешно зарегистрировались как кандидат! Заявка отправлена на модерацию.", "success")
-            return redirect(url_for('home'))
-            
-    return render_template('register.html', error=error)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        email = request.form['email'].strip()
-        password = request.form['password']
-        
-        user = User.get_by_email(email)
-        if user and user.check_password(password):
-            session['user_email'] = user.email
-            session['user_fio'] = user.fio
-            session['user_role'] = user.role
-            
-            flash(f"Рады видеть вас, {user.fio}!", 'info')
-            
-            if user.role == 'admins':
-                return redirect(url_for('admin'))
-            return redirect(url_for('home'))
-        else:
-            error = "Неверный Email или пароль."
-    return render_template('login.html', error=error)
-
-@app.route('/logout')
-def logout():
-    session.pop('user_email', None)
-    session.pop('user_fio', None)
-    session.pop('user_role', None)
-    flash("Вы вышли из системы.", 'info')
-    return redirect(url_for('home'))
-
-@app.route('/profile', methods=['GET', 'POST'])
-def profile():
-    user_email = session.get('user_email')
-    if not user_email:
-        return redirect(url_for('login'))
-
-    user = User.get_by_email(user_email)
-    
-    if request.method == 'POST':
-        # Подача заявки на другое событие
-        if 'apply_event_id' in request.form:
-            event_id = request.form.get('apply_event_id')
-            wishes = request.form.get('wishes', '').strip()
-            success = Application.create(user_email, event_id, wishes, 'pending')
-            if success:
-                # Получаем название события для отправки уведомления
-                events = Event.get_all()
-                event_title = next((e.title for e in events if e.id == int(event_id)), "Событие")
-                notify_admin_new_app(user.fio, event_title, user_email)
-                flash(f"Ваша заявка на '{event_title}' успешно отправлена!", 'success')
-            else:
-                flash("Вы уже подали заявку на это мероприятие!", 'error')
-                
-        # Сохранение настроек профиля (телефон, аватар)
-        else:
-            new_phone = request.form.get('phone', '').strip()
-            avatar_file = request.files.get('avatar')
-            avatar_filename = None
-
-            if avatar_file and avatar_file.filename != '':
-                if allowed_file(avatar_file.filename):
-                    ext = avatar_file.filename.rsplit('.', 1)[1].lower()
-                    safe_email_prefix = secure_filename(user_email.replace('@', '_').replace('.', '_'))
-                    avatar_filename = f"avatar_{safe_email_prefix}.{ext}"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], avatar_filename)
-                    avatar_file.save(filepath)
-                    user.update_profile(new_phone, avatar_filename)
-                else:
-                    flash("Недопустимый формат файла!", "error")
-            else:
-                user.update_profile(new_phone)
-                
-            flash("Профиль успешно обновлен!", 'success')
-
-    # Получаем актуальные заявки и доступные мероприятия
-    user_apps = Application.get_by_user(user_email)
-    available_events = Event.get_available_for_user(user_email)
-
-    return render_template('profile.html', user=user, apps=user_apps, available_events=available_events)
-
-
-# --- ДЕЙСТВИЯ АДМИНИСТРАТОРА ---
-
-@app.route('/admin/approve/<int:app_id>', methods=['POST'])
-def admin_approve(app_id):
-    if session.get('user_role') != 'admins':
-        flash("Доступ запрещен!", "error")
-        return redirect(url_for('home'))
-    
-    app_obj = Application.get_by_id(app_id)
-    if app_obj:
-        Application.update_status(app_id, 'approved')
-        
-        # Повышаем роль кандидата до 'user'
-        user = User.get_by_email(app_obj.user_email)
-        if user and user.role == 'candidate':
-            user.update_role('user')
-            
-        notify_user_app_status(app_obj.user_email, app_obj.user_fio, app_obj.event_title, 'approved')
-        flash(f"Заявка #{app_id} ({app_obj.user_fio}) подтверждена. Роль обновлена до User!", "success")
-    
-    return redirect(url_for('admin'))
-
-@app.route('/admin/reject/<int:app_id>', methods=['POST'])
-def admin_reject(app_id):
-    if session.get('user_role') != 'admins':
-        flash("Доступ запрещен!", "error")
-        return redirect(url_for('home'))
-    
-    app_obj = Application.get_by_id(app_id)
-    if app_obj:
-        Application.update_status(app_id, 'rejected')
-        
-        # Если отклонили заявку на Осенний Бал (ID: 1), удаляем его музыкальный голос
-        if app_obj.event_id == 1:
-            Vote.delete_by_user(app_obj.user_email)
-            
-        # Если у пользователя нет больше ни одной одобренной заявки, понижаем роль обратно до 'candidate'
-        approved_count = Application.get_approved_count_by_user(app_obj.user_email)
-        if approved_count == 0:
-            user = User.get_by_email(app_obj.user_email)
-            if user and user.role == 'user':
-                user.update_role('candidate')
-                
-        notify_user_app_status(app_obj.user_email, app_obj.user_fio, app_obj.event_title, 'rejected')
-        flash(f"Заявка #{app_id} ({app_obj.user_fio}) отклонена.", "warning")
-        
-    return redirect(url_for('admin'))
-
-@app.route('/admin')
-def admin():
-    if session.get('user_role') != 'admins':
-        flash("Доступ запрещен! У вас нет прав администратора.", "error")
-        return redirect(url_for('home'))
-        
-    apps = Application.get_all_detailed()
-    songs_stats, total_votes = Vote.get_stats(SONGS)
-    
-    return render_template('admin.html', apps=apps, stats=songs_stats, total_votes=total_votes)
-
-
-# --- 📃 ДОКУМЕНТАЦИЯ SWAGGER API ---
-
-@app.route('/api/users/docs')
-def swagger_ui():
-    if session.get('user_role') != 'admins':
-        flash("У вас нет прав для просмотра документации API.", "error")
-        return redirect(url_for('home'))
-    return render_template('swagger.html')
-
-@app.route('/api/users/swagger.json')
-def swagger_json():
-    if session.get('user_role') != 'admins':
-        return jsonify({'error': 'Unauthorized'}), 401
-    spec = {
-        "openapi": "3.0.0",
-        "info": {
-            "title": "Осенний Бал 2026 API",
-            "description": "Документация API для управления участниками и их заявками.",
-            "version": "1.1.0"
-        },
-        "servers": [{"url": "http://127.0.0.1:5000"}],
-        "paths": {
-            "/api/users": {
-                "get": {
-                    "summary": "Получить список участников",
-                    "responses": {
-                        "200": {
-                            "description": "Успешный запрос.",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "array",
-                                        "items": { "$ref": "#/components/schemas/User" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "components": {
-            "schemas": {
-                "User": {
-                    "type": "object",
-                    "properties": {
-                        "id": { "type": "integer" },
-                        "fio": { "type": "string" },
-                        "role": { "type": "string", "enum": ["candidate", "user", "admins"] }
-                    }
-                }
-            }
-        }
-    }
-    return jsonify(spec)
-
-# API-эндпоинт
-@app.route('/api/users')
-def api_users():
-    if session.get('user_role') != 'admins':
-        return jsonify({'error': 'Unauthorized', 'message': 'Admin role required'}), 401
-    
-    users_raw = User.get_all()
-    users_json = []
-    
-    for u in users_raw:
-        # Для каждого юзера подтягиваем его заявки через Application
-        apps_raw = Application.get_by_user(u.email)
-        user_apps = [{
-            'app_id': a.id,
-            'event_title': a.event_title,
-            'status': a.status,
-            'created_at': a.created_at
-        } for a in apps_raw]
-
-        avatar_url = url_for('static', filename=f'uploads/{u.avatar}', _external=True) if u.avatar else f"https://ui-avatars.com/api/?name={u.fio}&background=random&size=128"
-
-        users_json.append({
-            'id': u.id, 'fio': u.fio, 'class_group': u.class_group, 'email': u.email,
-            'phone': u.phone, 'avatar_url': avatar_url, 'registration_time': u.reg_time,
-            'role': u.role,
-            'applications': user_apps
+    songs_stats = []
+    for s_id, s_info in SONGS.items():
+        count = votes_dict.get(s_id, 0)
+        percent = round((count / total_votes * 100), 1) if total_votes > 0 else 0
+        songs_stats.append({
+            'id': s_id, 'title': s_info['title'], 'desc': s_info['desc'],
+            'votes': count, 'percent': percent, 'is_current': (s_id == user_vote_id)
         })
-        
-    return jsonify(users_json)
 
+    return templates.TemplateResponse("index.html", {
+        "request": request, "user_email": user_email, "user_fio": user_fio,
+        "user_role": user_role, "user_avatar": user_avatar, "songs": songs_stats, "total_votes": total_votes
+    })
+
+@app.post("/vote/{song_id}")
+def vote(request: Request, song_id: int, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    user_role = request.session.get('user_role')
+    if not user_email:
+        flash(request, "Пожалуйста, войдите в систему!", "warning")
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    if user_role == 'candidate':
+        flash(request, "Голосование доступно только подтвержденным участникам (роль User)!", "error")
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    vote_obj = db.query(Vote).filter(Vote.user_email == user_email).first()
+    if vote_obj:
+        vote_obj.song_id = song_id
+    else:
+        db.add(Vote(user_email=user_email, song_id=song_id))
+    db.commit()
+    flash(request, "Ваш голос успешно учтен!", "success")
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/register", response_class=HTMLResponse)
+def register_get(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+
+@app.post("/register")
+def register_post(
+    request: Request, fio: str = Form(...), class_group: str = Form(...),
+    email: str = Form(...), password: str = Form(...), phone: str = Form(""),
+    wishes: str = Form(""), db: Session = Depends(get_db)
+):
+    fio, class_group, email, phone, wishes = fio.strip(), class_group.strip(), email.strip(), phone.strip(), wishes.strip()
+    ip_address = request.headers.get('X-Forwarded-For', request.client.host)
+
+    if not fio or not class_group or not email or not password:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Пожалуйста, заполните все поля."})
+
+    if db.query(User).filter(User.email == email).first():
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Этот Email уже зарегистрирован."})
+
+    from werkzeug.security import generate_password_hash
+    hashed_password = generate_password_hash(password)
+    new_user = User(fio=fio, class_group=class_group, email=email, password=hashed_password, phone=phone, ip_address=ip_address, role='candidate')
+    db.add(new_user)
+    db.flush()
+
+    db.add(Application(user_email=email, event_id=1, wishes=wishes, status='pending'))
+    db.commit()
+
+    notify_admin_new_app(fio, "Осенний Бал 2026", email)
+    request.session.update({'user_email': email, 'user_fio': fio, 'user_role': 'candidate'})
+    flash(request, "Успешная регистрация! Заявка ожидает модерации.", "success")
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/login", response_class=HTMLResponse)
+def login_get(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+@app.post("/login")
+def login_post(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email.strip()).first()
+    if user and user.check_password(password):
+        request.session.update({'user_email': user.email, 'user_fio': user.fio, 'user_role': user.role})
+        flash(request, f"Рады видеть вас, {user.fio}!", "info")
+        return RedirectResponse(url="/admin" if user.role == 'admins' else "/", status_code=status.HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Неверный Email или пароль."})
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    flash(request, "Вы вышли из системы.", "info")
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/profile", response_class=HTMLResponse)
+def profile_get(request: Request, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(User).filter(User.email == user_email).first()
+    user_apps = db.query(Application).filter(Application.user_email == user_email).order_by(Application.id.desc()).all()
+    
+    mapped_apps = []
+    applied_ids = []
+    for app_obj in user_apps:
+        mapped_apps.append({
+            "id": app_obj.id, "title": app_obj.event.title, "date": app_obj.event.date_str,
+            "location": app_obj.event.location, "status": app_obj.status, "wishes": app_obj.wishes
+        })
+        applied_ids.append(app_obj.event_id)
+
+    all_events = db.query(Event).filter(~Event.id.in_(applied_ids)).all() if applied_ids else db.query(Event).all()
+    available_events = [{"id": e.id, "title": e.title, "date": e.date_str, "location": e.location} for e in all_events]
+
+    return templates.TemplateResponse("profile.html", {
+        "request": request, "user": user, "apps": mapped_apps, "available_events": available_events
+    })
+
+@app.post("/profile")
+async def profile_post(
+    request: Request, apply_event_id: Optional[int] = Form(None), wishes: str = Form(""),
+    phone: str = Form(""), avatar: Optional[UploadFile] = File(None), db: Session = Depends(get_db)
+):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    user = db.query(User).filter(User.email == user_email).first()
+
+    if apply_event_id is not None:
+        if db.query(Application).filter(Application.user_email == user_email, Application.event_id == apply_event_id).first():
+            flash(request, "Вы уже подали заявку на это событие!", "error")
+        else:
+            db.add(Application(user_email=user_email, event_id=apply_event_id, wishes=wishes.strip(), status='pending'))
+            db.commit()
+            event_obj = db.query(Event).filter(Event.id == apply_event_id).first()
+            notify_admin_new_app(user.fio, event_obj.title, user_email)
+            flash(request, f"Ваша заявка на '{event_obj.title}' успешно отправлена!", "success")
+    else:
+        user.phone = phone.strip()
+        if avatar and avatar.filename != '':
+            if allowed_file(avatar.filename):
+                ext = avatar.filename.rsplit('.', 1)[1].lower()
+                from werkzeug.utils import secure_filename
+                safe_prefix = secure_filename(user_email.replace('@', '_').replace('.', '_'))
+                avatar_filename = f"avatar_{safe_prefix}.{ext}"
+                filepath = os.path.join(UPLOAD_FOLDER, avatar_filename)
+                
+                with open(filepath, "wb") as buffer:
+                    shutil.copyfileobj(avatar.file, buffer)
+                user.avatar = avatar_filename
+            else:
+                flash(request, "Недопустимый формат аватарки!", "error")
+        db.commit()
+        flash(request, "Профиль обновлен!", "success")
+
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- ПАНЕЛЬ МОДЕРИРОВАНИЯ (ADMIN) ---
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        flash(request, "У вас нет прав администратора.", "error")
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    apps_raw = db.query(Application).order_by(Application.id.desc()).all()
+    apps = [{
+        'id': a.id, 'fio': a.user.fio, 'class_group': a.user.class_group, 'email': a.user_email,
+        'event_title': a.event.title, 'wishes': a.wishes, 'ip_address': a.user.ip_address,
+        'created_at': a.created_at.strftime('%Y-%m-%d %H:%M:%S'), 'status': a.status,
+        'avatar': a.user.avatar, 'role': a.user.role
+    } for a in apps_raw]
+
+    # Музыкальные результаты
+    total_votes = db.query(Vote).count()
+    votes_raw = db.query(Vote.song_id, func.count(Vote.user_email)).group_by(Vote.song_id).all()
+    votes_dict = {song_id: count for song_id, count in votes_raw}
+
+    stats = []
+    for s_id, s_info in SONGS.items():
+        count = votes_dict.get(s_id, 0)
+        percent = round((count / total_votes * 100), 1) if total_votes > 0 else 0
+        stats.append({'title': s_info['title'], 'votes': count, 'percent': percent})
+
+    return templates.TemplateResponse("admin.html", {
+        "request": request, "apps": apps, "stats": stats, "total_votes": total_votes
+    })
+
+@app.post("/admin/approve/{app_id}")
+def admin_approve(request: Request, app_id: int, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    app_obj = db.query(Application).filter(Application.id == app_id).first()
+    if app_obj:
+        app_obj.status = 'approved'
+        user = db.query(User).filter(User.email == app_obj.user_email).first()
+        if user and user.role == 'candidate':
+            user.role = 'user'
+        db.commit()
+        notify_user_app_status(app_obj.user_email, user.fio, app_obj.event.title, 'approved')
+        flash(request, f"Заявка #{app_id} одобрена! Роль пользователя обновлена до User.", "success")
+    return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/admin/reject/{app_id}")
+def admin_reject(request: Request, app_id: int, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    app_obj = db.query(Application).filter(Application.id == app_id).first()
+    if app_obj:
+        app_obj.status = 'rejected'
+        if app_obj.event_id == 1:
+            db.query(Vote).filter(Vote.user_email == app_obj.user_email).delete()
+
+        # Понижаем роль, если нет других одобренных мероприятий
+        approved_count = db.query(Application).filter(Application.user_email == app_obj.user_email, Application.status == 'approved').count()
+        user = db.query(User).filter(User.email == app_obj.user_email).first()
+        if approved_count == 0 and user and user.role == 'user':
+            user.role = 'candidate'
+
+        db.commit()
+        notify_user_app_status(app_obj.user_email, user.fio, app_obj.event.title, 'rejected')
+        flash(request, f"Заявка #{app_id} отклонена.", "warning")
+    return RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- 📃 REST API (С ИНТЕГРАЦИЕЙ В SWAGGER) ---
+
+@app.get('/api/users', response_model=List[UserSchema], tags=["Users API"])
+def api_users(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={'error': 'Unauthorized', 'message': 'Admin role required'})
+    users = db.query(User).order_by(User.id.desc()).all()
+    return [serialize_user(u, request) for u in users]
+
+@app.get('/api/users/admins', response_model=List[UserSchema], tags=["Users API"])
+def api_admins(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={'error': 'Unauthorized', 'message': 'Admin role required'})
+    users = db.query(User).filter(User.role == 'admins').order_by(User.id.desc()).all()
+    return [serialize_user(u, request) for u in users]
+
+@app.get('/api/users/users', response_model=List[UserSchema], tags=["Users API"])
+def api_approved_users(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={'error': 'Unauthorized', 'message': 'Admin role required'})
+    users = db.query(User).filter(User.role == 'user').order_by(User.id.desc()).all()
+    return [serialize_user(u, request) for u in users]
+
+@app.get('/api/users/candidates', response_model=List[UserSchema], tags=["Users API"])
+def api_candidates(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={'error': 'Unauthorized', 'message': 'Admin role required'})
+    users = db.query(User).filter(User.role == 'candidate').order_by(User.id.desc()).all()
+    return [serialize_user(u, request) for u in users]
+
+
+# Запуск инициализации бд при старте
+init_db()
 
 if __name__ == '__main__':
-    init_db()  # Инициализация переехала в models.py
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import uvicorn
+    import sys
+    
+    # Принудительно прописываем путь к текущей папке при старте
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    
+    # Запускаем сервер напрямую
+    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)
