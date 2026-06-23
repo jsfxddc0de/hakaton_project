@@ -15,10 +15,13 @@
                 <a href="/" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">
                     ← На главную
                 </a>
+                <a href="/api/users/docs" target="_blank" class="bg-amber-900/30 border border-amber-800 text-amber-400 px-4 py-2 rounded-lg hover:bg-amber-950 transition text-sm font-semibold">
+                    Документация API 📜
+                </a>
                 <a href="/api/users" target="_blank" class="bg-indigo-900/30 border border-indigo-800 text-indigo-400 px-4 py-2 rounded-lg hover:bg-indigo-950 transition text-sm font-semibold">
                     API (JSON) 📊
                 </a>
-                <a href="/admin/logout" class="bg-red-900/30 border border-red-800 text-red-400 px-4 py-2 rounded-lg hover:bg-red-950 transition text-sm font-semibold">
+                <a href="/logout" class="bg-red-900/30 border border-red-800 text-red-400 px-4 py-2 rounded-lg hover:bg-red-950 transition text-sm font-semibold">
                     Выйти 🚪
                 </a>
             </div>
@@ -72,8 +75,8 @@
                     <thead>
                         <tr class="bg-gray-700 text-gray-300 text-xs uppercase tracking-wider">
                             <th class="p-4 w-16">App ID</th>
-                            <th class="p-4 font-bold text-blue-400">Событие</th>
-                            <th class="p-4">Участник</th>
+                            <th class="p-4">Событие</th>
+                            <th class="p-4">Участник / Роль</th>
                             <th class="p-4">Статус</th>
                             <th class="p-4">Класс / Контакты</th>
                             <th class="p-4">Пожелания</th>
@@ -87,16 +90,26 @@
                             <td class="p-4 text-blue-400 font-mono font-bold">#{{ app.id }}</td>
                             
                             <!-- Событие -->
-                            <td class="p-4 font-bold text-orange-400 truncate max-w-[180px]" title="{{ app.event_title }}">
+                            <td class="p-4 font-bold text-orange-400 truncate max-w-[150px]" title="{{ app.event_title }}">
                                 {{ app.event_title }}
                             </td>
 
-                            <!-- Участник (ФИО с аватаркой) -->
-                            <td class="p-4 font-semibold text-white">
+                            <!-- Участник + Бейдж Роли -->
+                            <td class="p-4">
                                 <div class="flex items-center gap-3">
                                     <img src="{% if app.avatar %}{{ url_for('static', filename='uploads/' + app.avatar) }}{% else %}https://ui-avatars.com/api/?name={{ app.fio }}&background=F97316&color=fff{% endif %}" 
                                          alt="Аватар" class="w-10 h-10 rounded-full object-cover border border-orange-500/50 shadow">
-                                    <span>{{ app.fio }}</span>
+                                    <div>
+                                        <p class="font-semibold text-white">{{ app.fio }}</p>
+                                        <!-- ЦВЕТНОЙ БЕЙДЖ РОЛИ -->
+                                        {% if app.role == 'admins' %}
+                                            <span class="text-[10px] bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-bold">Организатор</span>
+                                        {% elif app.role == 'user' %}
+                                            <span class="text-[10px] bg-green-600/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-bold">User</span>
+                                        {% else %}
+                                            <span class="text-[10px] bg-orange-600/20 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-full font-bold">Candidate</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </td>
 
@@ -116,14 +129,13 @@
                                 <p class="text-green-400 font-mono text-[11px] mt-0.5">{{ app.email }}</p>
                             </td>
 
-                            <!-- Пожелания -->
                             <td class="p-4 text-purple-400 text-xs max-w-xs overflow-hidden text-ellipsis whitespace-nowrap" title="{{ app.wishes if app.wishes else '' }}">
                                 {{ app.wishes if app.wishes else '—' }}
                             </td>
 
                             <td class="p-4 text-xs text-gray-500 font-mono">{{ app.created_at }}</td>
 
-                            <!-- ДЕЙСТВИЯ АДМИНИСТРАТОРА -->
+                            <!-- КНОПКИ ДЕЙСТВИЙ -->
                             <td class="p-4">
                                 <div class="flex gap-2">
                                     {% if app.status != 'approved' %}

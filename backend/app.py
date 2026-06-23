@@ -19,9 +19,7 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 DATABASE = 'users.db'
-ADMIN_PASSWORD = '1488'
 
-# Список музыкальных композиций для голосования
 SONGS = {
     1: {
         "title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", 
@@ -51,9 +49,9 @@ SONGS = {
 }
 
 # Настройки почты (замени на свои данные)
-EMAIL_SENDER = 'gika.savinov@gmail.com'
-EMAIL_PASSWORD = os.environ.get('basr ksqv gbkq uvlv')
-ADMIN_EMAIL = 'dydlikkbas@gmail.com'
+EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
+EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')
+ADMIN_EMAIL = 'АДМИНИСТРАТОР_EMAIL@gmail.com'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465
 
@@ -91,27 +89,28 @@ def notify_user_app_status(email, fio, event_title, status):
     body = f"Здравствуйте, {fio}!\n\nСтатус вашей заявки на мероприятие '{event_title}' был изменен на: {status_ru}.\nПосмотреть статус всех своих заявок вы можете в профиле: http://127.0.0.1:5000/profile"
     send_email(email, subject, body)
 
-# Инициализация БД
+# Инициализация БД (добавлено поле role)
 def init_db():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
-    # 1. Таблица пользователей (Профили)
+    # 1. Таблица пользователей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fio TEXT NOT NULL,
             class_group TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL, -- Будет содержать безопасный ХЕШ
+            password TEXT NOT NULL,
             phone TEXT,
             avatar TEXT,
             ip_address TEXT NOT NULL,
+            role TEXT DEFAULT 'candidate', -- 'candidate', 'user', 'admins'
             reg_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
-    # 2. Таблица мероприятий (Events)
+    # 2. Таблица мероприятий
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,18 +120,18 @@ def init_db():
         )
     ''')
     
-    # 3. Таблица заявок (Applications)
+    # 3. Таблица заявок
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS applications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT NOT NULL,
             event_id INTEGER NOT NULL,
             wishes TEXT,
-            status TEXT DEFAULT 'pending', -- 'pending' (Новая), 'approved' (Подтверждена), 'rejected' (Отклонена)
+            status TEXT DEFAULT 'pending', -- 'pending' (новая), 'approved' (подтверждена), 'rejected' (отклонена)
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_email) REFERENCES users(email),
             FOREIGN KEY(event_id) REFERENCES events(id),
-            UNIQUE(user_email, event_id) -- Предотвращает дубли заявок
+            UNIQUE(user_email, event_id)
         )
     ''')
     
@@ -145,7 +144,7 @@ def init_db():
         )
     ''')
     
-    # Наполняем базу мероприятиями, если они отсутствуют
+    # Заполнение мероприятий по умолчанию
     cursor.execute('SELECT COUNT(*) FROM events')
     if cursor.fetchone()[0] == 0:
         events_list = [
@@ -155,6 +154,15 @@ def init_db():
         ]
         cursor.executemany('INSERT INTO events (id, title, date_str, location) VALUES (?, ?, ?, ?)', events_list)
 
+    # СОЗДАНИЕ АККАУНТА АДМИНИСТРАТОРА ПО УМОЛЧАНИЮ (если его нет)
+    cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admins'")
+    if cursor.fetchone()[0] == 0:
+        admin_pass_hash = generate_password_hash("1488")
+        cursor.execute('''
+            INSERT INTO users (fio, class_group, email, password, phone, ip_address, role) 
+            VALUES ('Главный Администратор', 'Оргкомитет', 'admin@ball.ru', ?, '—', '127.0.0.1', 'admins')
+        ''', (admin_pass_hash,))
+
     conn.commit()
     conn.close()
 
@@ -163,24 +171,20 @@ def init_db():
 def home():
     user_email = session.get('user_email')
     user_fio = session.get('user_fio')
+    user_role = session.get('user_role') # Извлекаем роль из сессии
     user_avatar = None
-    ball_approved = False
 
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
     if user_email:
-        cursor.execute('SELECT avatar, fio FROM users WHERE email = ?', (user_email,))
+        cursor.execute('SELECT avatar, fio, role FROM users WHERE email = ?', (user_email,))
         row = cursor.fetchone()
         if row:
             user_avatar = row[0]
             user_fio = row[1]
-        
-        # Проверяем, одобрена ли у пользователя заявка на Осенний Бал (ID: 1)
-        cursor.execute("SELECT status FROM applications WHERE user_email = ? AND event_id = 1", (user_email,))
-        app_status = cursor.fetchone()
-        if app_status and app_status[0] == 'approved':
-            ball_approved = True
+            user_role = row[2]
+            session['user_role'] = user_role # Актуализируем в сессии
 
     # Сбор результатов голосования
     cursor.execute('SELECT song_id, COUNT(*) FROM votes GROUP BY song_id')
@@ -211,37 +215,34 @@ def home():
     return render_template('index.html', 
                            user_email=user_email, 
                            user_fio=user_fio, 
+                           user_role=user_role,
                            user_avatar=user_avatar,
-                           ball_approved=ball_approved, # Разрешено ли голосовать
                            songs=songs_data, 
                            total_votes=total_votes)
 
-# Голосование
+# Голосование (Только для роли 'user' и 'admins')
 @app.route('/vote/<int:song_id>', methods=['POST'])
 def vote(song_id):
     user_email = session.get('user_email')
+    user_role = session.get('user_role')
+    
     if not user_email:
         flash("Пожалуйста, войдите в систему!", "warning")
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    
-    # Проверка: одобрена ли заявка на Осенний Бал
-    cursor.execute("SELECT status FROM applications WHERE user_email = ? AND event_id = 1", (user_email,))
-    app_status = cursor.fetchone()
-    if not app_status or app_status[0] != 'approved':
-        conn.close()
-        flash("Голосование доступно только участникам с подтвержденной заявкой на Осенний Бал!", "error")
+    if user_role == 'candidate':
+        flash("Голосование доступно только подтвержденным участникам (роль User)!", "error")
         return redirect(url_for('home'))
 
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
     cursor.execute('INSERT OR REPLACE INTO votes (user_email, song_id) VALUES (?, ?)', (user_email, song_id))
     conn.commit()
     conn.close()
     flash("Ваш голос успешно учтен!", "success")
     return redirect(url_for('home'))
 
-# Регистрация (Хеширование пароля!)
+# Регистрация (Кандидат по умолчанию)
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     error = None
@@ -265,34 +266,32 @@ def register():
             error = "Пользователь с таким Email уже зарегистрирован."
             conn.close()
         else:
-            # 1. Хешируем пароль перед записью в базу!
+            # Все новые пользователи регистрируются с ролью 'candidate'
             hashed_password = generate_password_hash(password)
-            
             cursor.execute(
-                'INSERT INTO users (fio, class_group, email, password, phone, ip_address) VALUES (?, ?, ?, ?, ?, ?)', 
+                "INSERT INTO users (fio, class_group, email, password, phone, ip_address, role) VALUES (?, ?, ?, ?, ?, ?, 'candidate')", 
                 (fio, class_group, email, hashed_password, phone, ip_address)
             )
-            
-            # 2. Автоматически создаем первую заявку на Осенний Бал (ID: 1) со статусом 'pending'
             cursor.execute(
-                'INSERT INTO applications (user_email, event_id, wishes, status) VALUES (?, 1, ?, ?)',
-                (email, wishes, 'pending')
+                "INSERT INTO applications (user_email, event_id, wishes, status) VALUES (?, 1, ?, 'pending')",
+                (email, wishes)
             )
             conn.commit()
             conn.close()
             
-            # Отправка уведомлений
             notify_admin_new_app(fio, "Осенний Бал 2026", email)
             
-            # Вход в аккаунт теперь доступен сразу, так как статус привязан к заявкам, а не к аккаунту!
+            # Авторизуем кандидата
             session['user_email'] = email
             session['user_fio'] = fio
-            flash("Регистрация успешна! Заявка на Осенний Бал отправлена на рассмотрение.", "success")
+            session['user_role'] = 'candidate'
+            
+            flash("Вы успешно зарегистрировались как кандидат! Заявка отправлена на модерацию.", "success")
             return redirect(url_for('home'))
             
     return render_template('register.html', error=error)
 
-# Вход (Проверка хеша!)
+# Вход
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -302,15 +301,20 @@ def login():
         
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute('SELECT fio, email, password FROM users WHERE email = ?', (email,))
+        cursor.execute('SELECT fio, email, password, role FROM users WHERE email = ?', (email,))
         user_data = cursor.fetchone()
         conn.close()
         
-        # Сравниваем введенный пароль с сохраненным хешем в бд
         if user_data and check_password_hash(user_data[2], password):
             session['user_email'] = user_data[1]
             session['user_fio'] = user_data[0]
-            flash(f"Рады видеть вас снова, {user_data[0]}!", 'info')
+            session['user_role'] = user_data[3] # Сохраняем роль пользователя в сессии!
+            
+            flash(f"Рады видеть вас, {user_data[0]}!", 'info')
+            
+            # Если вошел админ, сразу перенаправляем его в админку
+            if user_data[3] == 'admins':
+                return redirect(url_for('admin'))
             return redirect(url_for('home'))
         else:
             error = "Неверный Email или пароль."
@@ -321,10 +325,11 @@ def login():
 def logout():
     session.pop('user_email', None)
     session.pop('user_fio', None)
+    session.pop('user_role', None)
     flash("Вы вышли из системы.", 'info')
     return redirect(url_for('home'))
 
-# Профиль и Личный Кабинет Заявок
+# Профиль
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     user_email = session.get('user_email')
@@ -335,7 +340,6 @@ def profile():
     cursor = conn.cursor()
     
     if request.method == 'POST':
-        # 1. Клик по кнопке "Подать новую заявку"
         if 'apply_event_id' in request.form:
             event_id = request.form.get('apply_event_id')
             wishes = request.form.get('wishes', '').strip()
@@ -344,7 +348,6 @@ def profile():
                                (user_email, event_id, wishes, 'pending'))
                 conn.commit()
                 
-                # Получаем инфо о событии и ФИО для писем
                 cursor.execute('SELECT title FROM events WHERE id = ?', (event_id,))
                 event_title = cursor.fetchone()[0]
                 cursor.execute('SELECT fio FROM users WHERE email = ?', (user_email,))
@@ -355,7 +358,6 @@ def profile():
             except sqlite3.IntegrityError:
                 flash("Вы уже подали заявку на это мероприятие!", 'error')
                 
-        # 2. Сохранение данных профиля (телефон, пожелания, аватар)
         else:
             new_phone = request.form.get('phone', '').strip()
             avatar_file = request.files.get('avatar')
@@ -377,11 +379,9 @@ def profile():
             conn.commit()
             flash("Профиль успешно обновлен!", 'success')
 
-    # Получаем данные пользователя
-    cursor.execute('SELECT fio, class_group, email, phone, avatar FROM users WHERE email = ?', (user_email,))
+    cursor.execute('SELECT fio, class_group, email, phone, avatar, role FROM users WHERE email = ?', (user_email,))
     user_data = cursor.fetchone()
     
-    # Получаем список ЗАЯВОК пользователя с названиями мероприятий
     cursor.execute('''
         SELECT a.id, e.title, e.date_str, e.location, a.status, a.wishes 
         FROM applications a 
@@ -396,11 +396,9 @@ def profile():
             'id': app_row[0], 'title': app_row[1], 'date': app_row[2], 
             'location': app_row[3], 'status': app_row[4], 'wishes': app_row[5]
         })
-        # Собираем ID мероприятий, на которые заявка уже есть
         cursor.execute('SELECT id FROM events WHERE title = ?', (app_row[1],))
         applied_ids.append(cursor.fetchone()[0])
 
-    # Доступные для записи мероприятия (на которые еще нет заявок)
     cursor.execute('SELECT id, title, date_str, location FROM events')
     all_events = cursor.fetchall()
     available_events = []
@@ -412,17 +410,19 @@ def profile():
 
     user_dict = {
         'fio': user_data[0], 'class_group': user_data[1], 'email': user_data[2],
-        'phone': user_data[3] if user_data[3] else '', 'avatar': user_data[4]
+        'phone': user_data[3] if user_data[3] else '', 'avatar': user_data[4], 'role': user_data[5]
     }
     return render_template('profile.html', user=user_dict, apps=user_apps, available_events=available_events)
 
 
-# --- УПРАВЛЕНИЕ ЗАЯВКАМИ АДМИНОМ ---
+# --- МОДЕРИРОВАНИЕ ЗАЯВОК (АДМИН) ---
 
 @app.route('/admin/approve/<int:app_id>', methods=['POST'])
 def admin_approve(app_id):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
+    # Проверка: совершать действия в админке могут ТОЛЬКО админы
+    if session.get('user_role') != 'admins':
+        flash("Доступ запрещен!", "error")
+        return redirect(url_for('home'))
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -438,17 +438,22 @@ def admin_approve(app_id):
     if row:
         email, fio, event_title = row
         cursor.execute("UPDATE applications SET status = 'approved' WHERE id = ?", (app_id,))
+        
+        # ЕСЛИ ОДОБРИЛИ ЗАЯВКУ — АВТОМАТИЧЕСКИ ПОВЫШАЕМ РОЛЬ КАНДИДАТА ДО 'user'
+        cursor.execute("UPDATE users SET role = 'user' WHERE email = ? AND role = 'candidate'", (email,))
+        
         conn.commit()
         notify_user_app_status(email, fio, event_title, 'approved')
-        flash(f"Заявка #{app_id} ({fio}) успешно подтверждена!", "success")
+        flash(f"Заявка #{app_id} ({fio}) подтверждена. Роль обновлена до User!", "success")
     
     conn.close()
     return redirect(url_for('admin'))
 
 @app.route('/admin/reject/<int:app_id>', methods=['POST'])
 def admin_reject(app_id):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
+    if session.get('user_role') != 'admins':
+        flash("Доступ запрещен!", "error")
+        return redirect(url_for('home'))
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -464,9 +469,17 @@ def admin_reject(app_id):
     if row:
         email, fio, event_title, event_id = row
         cursor.execute("UPDATE applications SET status = 'rejected' WHERE id = ?", (app_id,))
-        # Если отклонили заявку на Осенний Бал (ID: 1), удаляем и голос из голосования за музыку
+        
+        # Если отклонили главную заявку (Осенний Бал), удаляем его голос
         if event_id == 1:
             cursor.execute("DELETE FROM votes WHERE user_email = ?", (email,))
+            
+        # Проверяем, есть ли у пользователя ЕЩЕ ХОТЬ ОДНА одобренная заявка на любое другое событие. 
+        # Если нет — понижаем его роль обратно до 'candidate'
+        cursor.execute("SELECT COUNT(*) FROM applications WHERE user_email = ? AND status = 'approved'", (email,))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("UPDATE users SET role = 'candidate' WHERE email = ? AND role = 'user'", (email,))
+            
         conn.commit()
         notify_user_app_status(email, fio, event_title, 'rejected')
         flash(f"Заявка #{app_id} ({fio}) отклонена.", "warning")
@@ -475,34 +488,18 @@ def admin_reject(app_id):
     return redirect(url_for('admin'))
 
 
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    error = None
-    if request.method == 'POST':
-        if request.form.get('password') == ADMIN_PASSWORD:
-            session['admin_logged_in'] = True
-            return redirect(url_for('admin'))
-        else:
-            error = 'Неверный пароль admin.'
-    return render_template('admin_login.html', error=error)
-
-@app.route('/admin/logout')
-def admin_logout():
-    session.pop('admin_logged_in', None)
-    return redirect(url_for('admin_login'))
-
-# Админка (Модерация заявок)
+# Админка (Доступ только для admins)
 @app.route('/admin')
 def admin():
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
+    if session.get('user_role') != 'admins':
+        flash("Доступ запрещен! У вас нет прав администратора.", "error")
+        return redirect(url_for('home'))
         
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
-    # Выбираем список всех ЗАЯВОК (Applications)
     cursor.execute('''
-        SELECT a.id, u.fio, u.class_group, u.email, e.title, a.wishes, u.ip_address, a.created_at, a.status, u.avatar 
+        SELECT a.id, u.fio, u.class_group, u.email, e.title, a.wishes, u.ip_address, a.created_at, a.status, u.avatar, u.role 
         FROM applications a 
         JOIN users u ON a.user_email = u.email 
         JOIN events e ON a.event_id = e.id 
@@ -515,10 +512,9 @@ def admin():
         apps.append({
             'id': a[0], 'fio': a[1], 'class_group': a[2], 'email': a[3],
             'event_title': a[4], 'wishes': a[5], 'ip_address': a[6],
-            'created_at': a[7], 'status': a[8], 'avatar': a[9]
+            'created_at': a[7], 'status': a[8], 'avatar': a[9], 'role': a[10]
         })
 
-    # Сбор музыкальной статистики
     cursor.execute('SELECT song_id, COUNT(*) FROM votes GROUP BY song_id')
     votes_raw = cursor.fetchall()
     votes_dict = {song_id: count for song_id, count in votes_raw}
@@ -537,24 +533,78 @@ def admin():
     conn.close()
     return render_template('admin.html', apps=apps, stats=stats, total_votes=total_votes)
 
-# API
+
+# --- 📃 ДОКУМЕНТАЦИЯ SWAGGER API ---
+
+@app.route('/api/users/docs')
+def swagger_ui():
+    if session.get('user_role') != 'admins':
+        flash("У вас нет прав для просмотра документации API.", "error")
+        return redirect(url_for('home'))
+    return render_template('swagger.html')
+
+@app.route('/api/users/swagger.json')
+def swagger_json():
+    if session.get('user_role') != 'admins':
+        return jsonify({'error': 'Unauthorized'}), 401
+    spec = {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Осенний Бал 2026 API",
+            "description": "Документация API для управления участниками и их заявками.",
+            "version": "1.1.0"
+        },
+        "servers": [{"url": "http://127.0.0.1:5000"}],
+        "paths": {
+            "/api/users": {
+                "get": {
+                    "summary": "Получить список участников",
+                    "responses": {
+                        "200": {
+                            "description": "Успешный запрос.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": { "$ref": "#/components/schemas/User" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "components": {
+            "schemas": {
+                "User": {
+                    "type": "object",
+                    "properties": {
+                        "id": { "type": "integer" },
+                        "fio": { "type": "string" },
+                        "role": { "type": "string", "enum": ["candidate", "user", "admins"] }
+                    }
+                }
+            }
+        }
+    }
+    return jsonify(spec)
+
+# API-эндпоинт
 @app.route('/api/users')
 def api_users():
-    if not session.get('admin_logged_in'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Admin login required'}), 401
+    if session.get('user_role') != 'admins':
+        return jsonify({'error': 'Unauthorized', 'message': 'Admin role required'}), 401
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    
-    # Выбираем пользователей
-    cursor.execute('SELECT id, fio, class_group, email, phone, avatar, reg_time FROM users ORDER BY id DESC')
+    cursor.execute('SELECT id, fio, class_group, email, phone, avatar, reg_time, role FROM users ORDER BY id DESC')
     users_raw = cursor.fetchall()
     
     users_json = []
     for u in users_raw:
         user_email = u[3]
         
-        # Для каждого пользователя подгружаем его заявки
         cursor.execute('''
             SELECT a.id, e.title, a.status, a.created_at 
             FROM applications a 
@@ -577,7 +627,8 @@ def api_users():
         users_json.append({
             'id': u[0], 'fio': u[1], 'class_group': u[2], 'email': user_email,
             'phone': u[4], 'avatar_url': avatar_url, 'registration_time': u[6],
-            'applications': user_apps # Список всех заявок вложенным JSON-массивом!
+            'role': u[7], # Добавляем роль в JSON ответ
+            'applications': user_apps
         })
         
     conn.close()
