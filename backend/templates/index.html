@@ -22,7 +22,7 @@
                     </span>
                 </div>
                 <a href="/profile" class="bg-amber-800 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold transition text-sm shadow-md">
-                    Настройки профиля ⚙️
+                    Мой кабинет ⚙️
                 </a>
                 <a href="/logout" class="bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition text-sm shadow-md">
                     Выйти 🚪
@@ -71,6 +71,13 @@
                 <span class="text-4xl">🎵</span>
                 <h2 class="text-2xl md:text-3xl font-serif font-bold text-orange-400 mt-2">Какая композиция откроет бал?</h2>
                 <p class="text-sm text-amber-300/70 mt-1">Послушайте превью композиций и отдайте свой голос.</p>
+                
+                {% if user_email and not ball_approved %}
+                <p class="text-xs bg-yellow-950 text-yellow-400 border border-yellow-900/65 rounded-lg px-4 py-2 mt-3 inline-block font-semibold">
+                    ⚠️ Голосование станет доступно после подтверждения вашей заявки на Осенний Бал администратором!
+                </p>
+                {% endif %}
+
                 <p class="text-xs text-amber-500 mt-2 font-mono">Всего голосов: <span class="text-amber-300 font-bold">{{ total_votes }}</span></p>
             </div>
 
@@ -82,20 +89,16 @@
                         <!-- Интерактивный плеер + Текст -->
                         <div class="flex items-center gap-4 flex-1">
                             
-                            <!-- Кнопка Play/Pause (Кастомная) -->
                             <button onclick="togglePlay('{{ song.id }}')" id="play-btn-{{ song.id }}"
                                     class="w-12 h-12 flex-shrink-0 bg-orange-600 hover:bg-orange-500 text-white rounded-full flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95 duration-200">
-                                <!-- Иконка Play (Треугольник) -->
                                 <svg id="svg-play-{{ song.id }}" class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
-                                <!-- Иконка Pause (Две полоски) - скрыта по умолчанию -->
                                 <svg id="svg-pause-{{ song.id }}" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
                                 </svg>
                             </button>
 
-                            <!-- Скрытый HTML5 аудиоэлемент -->
                             <audio id="audio-{{ song.id }}" src="{{ song.audio_url }}" preload="none" onended="onSongEnded('{{ song.id }}')"></audio>
 
                             <div>
@@ -109,20 +112,26 @@
                             </div>
                         </div>
 
-                        <!-- Кнопка голосования -->
+                        <!-- Кнопка голосования (С валидацией одобрения!) -->
                         <div class="flex-shrink-0">
                             {% if user_email %}
-                                <form action="/vote/{{ song.id }}" method="POST">
-                                    <button type="submit" 
-                                            class="w-full md:w-auto px-5 py-2.5 rounded-lg text-xs font-bold transition duration-200 
-                                            {% if song.is_current %}
-                                                bg-orange-600 text-white cursor-default shadow-md shadow-orange-950/50
-                                            {% else %}
-                                                bg-amber-800 hover:bg-orange-500 text-amber-100 hover:text-white border border-amber-700 hover:border-orange-500
-                                            {% endif %}">
-                                        {% if song.is_current %}Выбрано{% else %}Голосовать{% endif %}
+                                {% if ball_approved %}
+                                    <form action="/vote/{{ song.id }}" method="POST">
+                                        <button type="submit" 
+                                                class="w-full md:w-auto px-5 py-2.5 rounded-lg text-xs font-bold transition duration-200 
+                                                {% if song.is_current %}
+                                                    bg-orange-600 text-white cursor-default shadow-md shadow-orange-950/50
+                                                {% else %}
+                                                    bg-amber-800 hover:bg-orange-500 text-amber-100 hover:text-white border border-amber-700 hover:border-orange-500
+                                                {% endif %}">
+                                            {% if song.is_current %}Выбрано{% else %}Голосовать{% endif %}
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button disabled class="w-full md:w-auto px-5 py-2.5 bg-gray-800 text-gray-500 border border-gray-700 rounded-lg text-xs font-bold cursor-not-allowed">
+                                        Заблокировано
                                     </button>
-                                </form>
+                                {% endif %}
                             {% else %}
                                 <a href="/login" class="inline-block w-full md:w-auto text-center px-4 py-2.5 bg-amber-900/40 border border-amber-800 hover:bg-orange-500 hover:border-orange-500 rounded-lg text-xs font-semibold text-amber-300 hover:text-white transition">
                                     Войти для голоса
@@ -131,7 +140,7 @@
                         </div>
                     </div>
 
-                    <!-- Шкала процентов голосов -->
+                    <!-- Шкала процентов -->
                     <div class="w-full bg-amber-950 rounded-full h-2.5 overflow-hidden border border-amber-900 flex items-center mt-3">
                         <div class="bg-gradient-to-r from-orange-600 to-amber-500 h-full rounded-full transition-all duration-500" 
                              style="width: {{ song.percent }}%"></div>
@@ -170,17 +179,15 @@
         <p>© 2026 Осенний Бал. Все права защищены. | <a href="/admin" class="hover:underline text-amber-400/50">Админка</a></p>
     </footer>
 
-    <!-- JAVASCRIPT ДЛЯ КАСТОМНОГО ПЛЕЕРА -->
+    <!-- Плеер JS -->
     <script>
         let currentlyPlayingId = null;
-
         function togglePlay(songId) {
             const audio = document.getElementById(`audio-${songId}`);
             const playSvg = document.getElementById(`svg-play-${songId}`);
             const pauseSvg = document.getElementById(`svg-pause-${songId}`);
             const btn = document.getElementById(`play-btn-${songId}`);
 
-            // Если кликнули на другую песню, останавливаем текущую играющую
             if (currentlyPlayingId && currentlyPlayingId !== songId) {
                 const activeAudio = document.getElementById(`audio-${currentlyPlayingId}`);
                 const activePlaySvg = document.getElementById(`svg-play-${currentlyPlayingId}`);
@@ -194,13 +201,12 @@
                 activeBtn.classList.add('bg-orange-600');
             }
 
-            // Переключаем состояние выбранной песни
             if (audio.paused) {
                 audio.play();
                 playSvg.classList.add('hidden');
                 pauseSvg.classList.remove('hidden');
                 btn.classList.remove('bg-orange-600');
-                btn.classList.add('bg-amber-600'); // Меняем цвет кнопки при проигрывании
+                btn.classList.add('bg-amber-600');
                 currentlyPlayingId = songId;
             } else {
                 audio.pause();
@@ -212,22 +218,16 @@
             }
         }
 
-        // Возвращаем иконку Play, когда музыка доиграла до конца
         function onSongEnded(songId) {
             const playSvg = document.getElementById(`svg-play-${songId}`);
             const pauseSvg = document.getElementById(`svg-pause-${songId}`);
             const btn = document.getElementById(`play-btn-${songId}`);
-            
             playSvg.classList.remove('hidden');
             pauseSvg.classList.add('hidden');
             btn.classList.remove('bg-amber-600');
             btn.classList.add('bg-orange-600');
-            
-            if (currentlyPlayingId === songId) {
-                currentlyPlayingId = null;
-            }
+            if (currentlyPlayingId === songId) currentlyPlayingId = null;
         }
     </script>
-
 </body>
 </html>
