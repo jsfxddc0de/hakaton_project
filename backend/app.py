@@ -23,11 +23,31 @@ DATABASE = 'users.db'
 ADMIN_PASSWORD = '1488'
 
 SONGS = {
-    1: {"title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий."},
-    2: {"title": "Георгий Свиридов — Вальс (Метель)", "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием."},
-    3: {"title": "П. И. Чайковский — Октябрь. Осенняя песнь", "desc": "Глубокая и поэтичная классика, передающая тихую грусть золотой осени."},
-    4: {"title": "Антонио Вивальди — Осень (Времена года)", "desc": "Энергичное и праздничное барокко, воспевающее сбор урожая и радость."},
-    5: {"title": "Ян Тирсен — Waltz of the Monsters", "desc": "Уютный, сказочный и немного загадочный неоклассический вальс."}
+    1: {
+        "title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", 
+        "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий.",
+        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Chopin_Waltz_in_C_sharp_minor_Op._64_No._2_performed_by_Luke_Faulkner.mp3" # Прекрасный вальс Шопена в качестве качественного открытого источника
+    },
+    2: {
+        "title": "Георгий Свиридов — Вальс (Метель)", 
+        "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием.",
+        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Tchaikovsky_-_Waltz_of_the_Flowers_-_Peabody_Symphony_Orchestra.mp3" # Знаменитый Вальс Цветов
+    },
+    3: {
+        "title": "П. И. Чайковский — Октябрь. Осенняя песнь", 
+        "desc": "Глубокая и поэтичная классика, передающая тихую грусть золотой осени.",
+        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Chopin_Nocturne_Op._9_No._2_in_E_flat_major_performed_by_Luke_Faulkner.mp3" # Ноктюрн Шопена
+    },
+    4: {
+        "title": "Антонио Вивальди — Осень (Времена года)", 
+        "desc": "Энергичное и праздничное барокко, воспевающее сбор урожая и радость.",
+        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/07_-_Vivaldi_Autumn_mvt_1_Allegro_-_John_Harrison_violin.mp3" # Оригинальный Вивальди (Осень)
+    },
+    5: {
+        "title": "Ян Тирсен — Waltz of the Monsters", 
+        "desc": "Уютный, сказочный и немного загадочный неоклассический вальс.",
+        "audio_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Erik_Satie_-_Gymnopedie_No._1_-_arr._violin_and_piano.mp3" # Атмосферная Гимнопедия Сати
+    }
 }
 
 EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
