@@ -82,12 +82,33 @@ templates.env.globals['url_for'] = compat_url_for
 
 
 SONGS = {
-    1: {"title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", "desc": "Торжественный вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Chopin_Waltz_in_C_sharp_minor_Op._64_No._2_performed_by_Luke_Faulkner.mp3"},
-    2: {"title": "Георгий Свиридов — Вальс (Метель)", "desc": "Кружащийся, яркий русский вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Tchaikovsky_-_Waltz_of_the_Flowers_-_Peabody_Symphony_Orchestra.mp3"},
-    3: {"title": "П. И. Чайковский — Октябрь. Осенняя песнь", "desc": "Тихая грусть золотой осени.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/30/Chopin_Nocturne_Op._9_No._2_in_E_flat_major_performed_by_Luke_Faulkner.mp3"},
-    4: {"title": "Антонио Вивальди — Осень (Времена года)", "desc": "Праздничное барокко.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/07_-_Vivaldi_Autumn_mvt_1_Allegro_-_John_Harrison_violin.mp3"},
-    5: {"title": "Ян Тирсен — Waltz of the Monsters", "desc": "Загадочный неоклассический вальс.", "audio_url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Erik_Satie_-_Gymnopedie_No._1_-_arr._violin_and_piano.mp3"}
+    1: {
+        "title": "Евгений Дога — Вальс (Мой ласковый и нежный зверь)", 
+        "desc": "Торжественный и эмоциональный вальс, ставший символом бальных открытий.",
+        "audio_url": "/static/music/1.mp3"  # Локальный быстрый путь!
+    },
+    2: {
+        "title": "Георгий Свиридов — Вальс (Метель)", 
+        "desc": "Кружащийся, яркий вальс с благородным и широким русским звучанием.",
+        "audio_url": "/static/music/2.mp3"
+    },
+    3: {
+        "title": "П. И. Чайковский — Октябрь. Осенняя песнь", 
+        "desc": "Глубокая и поэтичная классика, передающая тихую грусть золотой осени.",
+        "audio_url": "/static/music/3.mp3"
+    },
+    4: {
+        "title": "Антонио Вивальди — Осень (Времена года)", 
+        "desc": "Энергичное и праздничное барокко, воспевающее сбор урожая и радость.",
+        "audio_url": "/static/music/4.mp3"
+    },
+    5: {
+        "title": "Ян Тирсен — Waltz of the Monsters", 
+        "desc": "Уютный, сказочный и немного загадочный неоклассический вальс.",
+        "audio_url": "/static/music/5.mp3"
+    }
 }
+
 
 EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
 EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')

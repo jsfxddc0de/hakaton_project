@@ -118,7 +118,7 @@
                                 </svg>
                             </button>
 
-                            <audio id="audio-{{ song.id }}" src="{{ song.audio_url }}" preload="none" onended="onSongEnded('{{ song.id }}')"></audio>
+                            <audio id="audio-{{ song.id }}" src="{{ song.audio_url }}" preload="metadata" onended="onSongEnded('{{ song.id }}')"></audio>
 
                             <div>
                                 <h4 class="font-bold text-amber-250 text-base flex items-center gap-2 leading-tight">
@@ -199,15 +199,21 @@
     </footer>
 
     <!-- Плеер JS -->
+    <!-- Улучшенный Плеер JS с отладкой -->
     <script>
         let currentlyPlayingId = null;
+
         function togglePlay(songId) {
             const audio = document.getElementById(`audio-${songId}`);
             const playSvg = document.getElementById(`svg-play-${songId}`);
             const pauseSvg = document.getElementById(`svg-pause-${songId}`);
             const btn = document.getElementById(`play-btn-${songId}`);
 
+            console.log(`Клик по треку #${songId}. URL: ${audio.src}`);
+
+            // Если сейчас играет другой трек — выключаем его
             if (currentlyPlayingId && currentlyPlayingId !== songId) {
+                console.log(`Останавливаем предыдущий трек #${currentlyPlayingId}`);
                 const activeAudio = document.getElementById(`audio-${currentlyPlayingId}`);
                 const activePlaySvg = document.getElementById(`svg-play-${currentlyPlayingId}`);
                 const activePauseSvg = document.getElementById(`svg-pause-${currentlyPlayingId}`);
@@ -221,13 +227,22 @@
             }
 
             if (audio.paused) {
-                audio.play();
-                playSvg.classList.add('hidden');
-                pauseSvg.classList.remove('hidden');
-                btn.classList.remove('bg-orange-600');
-                btn.classList.add('bg-amber-600');
-                currentlyPlayingId = songId;
+                // Пытаемся воспроизвести аудиофайл
+                audio.play()
+                    .then(() => {
+                        console.log(`Трек #${songId} успешно воспроизводится!`);
+                        playSvg.classList.add('hidden');
+                        pauseSvg.classList.remove('hidden');
+                        btn.classList.remove('bg-orange-600');
+                        btn.classList.add('bg-amber-600');
+                        currentlyPlayingId = songId;
+                    })
+                    .catch(error => {
+                        console.error(`Ошибка воспроизведения трека #${songId}:`, error);
+                        alert("Не удалось загрузить аудиофайл. Убедитесь, что файл существует по указанному пути.");
+                    });
             } else {
+                console.log(`Приостанавливаем трек #${songId}`);
                 audio.pause();
                 playSvg.classList.remove('hidden');
                 pauseSvg.classList.add('hidden');
@@ -238,6 +253,7 @@
         }
 
         function onSongEnded(songId) {
+            console.log(`Воспроизведение трека #${songId} завершено.`);
             const playSvg = document.getElementById(`svg-play-${songId}`);
             const pauseSvg = document.getElementById(`svg-pause-${songId}`);
             const btn = document.getElementById(`play-btn-${songId}`);
@@ -248,5 +264,7 @@
             if (currentlyPlayingId === songId) currentlyPlayingId = null;
         }
     </script>
+
+ 
 </body>
 </html>
