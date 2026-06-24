@@ -1,3 +1,4 @@
+import random
 import sys
 import os
 from pathlib import Path
@@ -110,9 +111,13 @@ SONGS = {
 }
 
 
-EMAIL_SENDER = 'ВАШ_EMAIL@gmail.com'
-EMAIL_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ')
-ADMIN_EMAIL = 'АДМИНИСТРАТОР_EMAIL@gmail.com'
+EMAIL_SENDER = 'gika.savinov@gmail.com'
+
+# ВСТАВЬ СЮДА СВОЙ 16-ЗНАЧНЫЙ ПАРОЛЬ ПРИЛОЖЕНИЯ GOOGLE
+EMAIL_PASSWORD = 'istikzotoniqfjvh'  # <--- Вставь свой пароль (можно с пробелами или без)
+
+ADMIN_EMAIL = 'dydlikkbas@gmail.com'
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465
 
@@ -127,22 +132,32 @@ def get_db():
         db.close()
 
 def send_email(to_email, subject, body):
-    if not EMAIL_PASSWORD or EMAIL_PASSWORD == 'ВАШ_ПАРОЛЬ_ПРИЛОЖЕНИЯ':
-        return False
+    # Показываем отладку
+    print(f"[ОТЛАДКА ПОЧТЫ] Отправитель: '{EMAIL_SENDER}'")
+    print(f"[ОТЛАДКА ПОЧТЫ] Получатель: '{ADMIN_EMAIL}'")
+    print(f"[ОТЛАДКА ПОЧТЫ] Длина пароля: {len(EMAIL_PASSWORD) if EMAIL_PASSWORD else 0} символов")
+
     msg = EmailMessage()
     msg['Subject'] = subject
     msg['From'] = EMAIL_SENDER
     msg['To'] = to_email
     msg.set_content(body)
+    
     try:
         context = ssl.create_default_context()
+        print(f"📧 Попытка отправки письма на {to_email} через сервера Google...")
+        
         with smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT, context=context) as smtp:
             smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
             smtp.send_message(msg)
+            
+        print(f"✅ Письмо успешно отправлено на {to_email}!")
         return True
     except Exception as e:
-        print(f"Ошибка отправки почты: {e}")
+        print(f"❌ ОШИБКА ОТПРАВКИ ПОЧТЫ: {e}")
         return False
+
+
 
 def notify_admin_new_app(fio, event_title, email):
     subject = f"🔔 Новая заявка на {event_title}: {fio}"
@@ -280,21 +295,115 @@ async def register_post(
     if not fio or not class_group or not email or not password:
         return templates.TemplateResponse(request=request, name="register.html", context={"error": "Пожалуйста, заполните все поля."})
 
+    # Проверяем, нет ли уже такого пользователя в БД
     if db.query(User).filter(User.email == email).first():
         return templates.TemplateResponse(request=request, name="register.html", context={"error": "Этот Email уже зарегистрирован."})
 
+    # Генерируем 6-значный код подтверждения
+    verification_code = str(random.randint(100000, 999999))
+
+    # Хешируем пароль заранее
     from werkzeug.security import generate_password_hash
     hashed_password = generate_password_hash(password)
-    new_user = User(fio=fio, class_group=class_group, email=email, password=hashed_password, phone=phone, ip_address=ip_address, role='candidate')
+
+    # Сохраняем временные данные пользователя в сессию
+    request.session["temp_register"] = {
+        "fio": fio,
+        "class_group": class_group,
+        "email": email,
+        "password": hashed_password,
+        "phone": phone,
+        "wishes": wishes,
+        "ip_address": ip_address,
+        "code": verification_code
+    }
+
+    # Отправляем код на почту регистрирующегося пользователя
+    subject = "✉️ Код подтверждения регистрации — Осенний Бал 2026"
+    body = (
+        f"Здравствуйте, {fio}!\n\n"
+        f"Вы начали регистрацию на Осенний Бал 2026.\n"
+        f"Ваш одноразовый код подтверждения: {verification_code}\n\n"
+        f"Пожалуйста, введите его на странице верификации для завершения регистрации."
+    )
+    
+    # Отправляем письмо пользователю
+    email_sent = send_email(email, subject, body)
+    
+    if not email_sent:
+        # Если почта не отправилась вообще (например, неверный email), пишем ошибку
+        return templates.TemplateResponse(request=request, name="register.html", context={"error": "Не удалось отправить код подтверждения. Проверьте правильность Email."})
+
+    flash(request, "Код подтверждения отправлен на вашу почту!", "info")
+    # Перенаправляем на страницу ввода кода
+    return RedirectResponse(request.url_for("verify_get"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- НОВЫЕ РОУТЫ: СТРАНИЦА ВЕРИФИКАЦИИ КОДА ---
+
+@app.get("/verify", response_class=HTMLResponse)
+async def verify_get(request: Request):
+    # Если в сессии нет временных данных регистрации, отправляем обратно на страницу регистрации
+    if "temp_register" not in request.session:
+        flash(request, "Сначала заполните форму регистрации.", "warning")
+        return RedirectResponse(request.url_for("register_get"), status_code=status.HTTP_303_SEE_OTHER)
+        
+    return templates.TemplateResponse(request=request, name="verify.html", context={"error": None})
+
+@app.post("/verify")
+async def verify_post(request: Request, code: str = Form(...), db: Session = Depends(get_db)):
+    # Проверяем наличие временных данных
+    if "temp_register" not in request.session:
+        flash(request, "Сессия регистрации истекла. Пожалуйста, заполните форму заново.", "error")
+        return RedirectResponse(request.url_for("register_get"), status_code=status.HTTP_303_SEE_OTHER)
+
+    temp_data = request.session["temp_register"]
+    user_code = code.strip()
+
+    # Сравниваем код, введенный пользователем, с кодом из сессии
+    if user_code != temp_data["code"]:
+        return templates.TemplateResponse(
+            request=request, 
+            name="verify.html", 
+            context={"error": "Неверный код подтверждения. Попробуйте еще раз."}
+        )
+
+    # Если код совпал — создаем пользователя в БД!
+    new_user = User(
+        fio=temp_data["fio"],
+        class_group=temp_data["class_group"],
+        email=temp_data["email"],
+        password=temp_data["password"],
+        phone=temp_data["phone"],
+        ip_address=temp_data["ip_address"],
+        role='candidate'
+    )
     db.add(new_user)
     db.flush()
 
-    db.add(Application(user_email=email, event_id=1, wishes=wishes, status='pending'))
+    # Создаем заявку на Осенний Бал (ID: 1)
+    db.add(Application(
+        user_email=temp_data["email"], 
+        event_id=1, 
+        wishes=temp_data["wishes"], 
+        status='pending'
+    ))
     db.commit()
 
-    notify_admin_new_app(fio, "Осенний Бал 2026", email)
-    request.session.update({'user_email': email, 'user_fio': fio, 'user_role': 'candidate'})
-    flash(request, "Успешная регистрация! Заявка ожидает модерации.", "success")
+    # Отправляем уведомление администратору о новой заявке
+    notify_admin_new_app(temp_data["fio"], "Осенний Бал 2026", temp_data["email"])
+
+    # Авторизуем пользователя (записываем в постоянную сессию)
+    request.session.update({
+        'user_email': temp_data["email"], 
+        'user_fio': temp_data["fio"], 
+        'user_role': 'candidate'
+    })
+
+    # Очищаем временные данные из сессии
+    request.session.pop("temp_register", None)
+
+    flash(request, "Ваша почта подтверждена! Заявка успешно отправлена на модерацию.", "success")
     return RedirectResponse(request.url_for("home"), status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login", response_class=HTMLResponse)
