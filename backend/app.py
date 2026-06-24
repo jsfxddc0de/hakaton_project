@@ -1,3 +1,7 @@
+from fastapi.responses import StreamingResponse
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+import io
 import random
 import sys
 import os
@@ -523,6 +527,125 @@ async def admin(request: Request, db: Session = Depends(get_db)):
         request=request, 
         name="admin.html", 
         context={"apps": apps, "stats": stats, "total_votes": total_votes}
+    )
+
+@app.get("/admin/export/excel")
+async def export_applications_to_excel(request: Request, db: Session = Depends(get_db)):
+    # Проверяем, что скачивает именно администратор
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={'error': 'Unauthorized'})
+
+    # Получаем все заявки из БД со всеми связями
+    apps_raw = db.query(Application).order_by(Application.id.desc()).all()
+
+    # Создаем Excel-книгу
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Заявки на Бал 2026"
+
+    # Включаем сетку таблицы
+    ws.views.sheetView[0].showGridLines = True
+
+    # Стили для красивого оформления таблицы
+    font_title = Font(name='Calibri', size=16, bold=True, color='804000')
+    font_header = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    font_data = Font(name='Calibri', size=11)
+    
+    fill_header = PatternFill(start_color='B17A20', end_color='B17A20', fill_type='solid') # Осенний золотой цвет
+    align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
+
+    # Тонкая рамка для ячеек
+    thin_border = Border(
+        left=Side(style='thin', color='D3D3D3'),
+        right=Side(style='thin', color='D3D3D3'),
+        top=Side(style='thin', color='D3D3D3'),
+        bottom=Side(style='thin', color='D3D3D3')
+    )
+
+    # 1. Заголовок таблицы
+    ws.merge_cells('A1:J1')
+    ws['A1'] = "СПИСОК ЗАЯВОК НА УЧАСТИЕ — ОСЕННИЙ БАЛ 2026"
+    ws['A1'].font = font_title
+    ws['A1'].alignment = Alignment(horizontal='left', vertical='center')
+    ws.row_dimensions[1].height = 40
+
+    # Пустая строка-разделитель
+    ws.append([])
+
+    # 2. Шапка таблицы
+    headers = [
+        "ID Заявки", "ФИО Участника", "Класс / Группа", "Email", 
+        "Телефон", "Мероприятие", "Пожелания", "Статус", "IP-адрес", "Дата подачи"
+    ]
+    ws.append(headers)
+    ws.row_dimensions[3].height = 28
+
+    for col_idx in range(1, 11):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.font = font_header
+        cell.fill = fill_header
+        cell.alignment = align_center
+        cell.border = thin_border
+
+    # 3. Наполнение данными
+    for app_obj in apps_raw:
+        status_ru = {
+            'pending': 'Ожидает модерации ⏳',
+            'approved': 'Одобрена ✅',
+            'rejected': 'Отклонена ❌'
+        }.get(app_obj.status, app_obj.status)
+
+        row = [
+            app_obj.id,
+            app_obj.user.fio if app_obj.user else "Удален",
+            app_obj.user.class_group if app_obj.user else "—",
+            app_obj.user_email,
+            app_obj.user.phone if (app_obj.user and app_obj.user.phone) else "—",
+            app_obj.event.title if app_obj.event else "Удалено",
+            app_obj.wishes if app_obj.wishes else "—",
+            status_ru,
+            app_obj.user.ip_address if app_obj.user else "—",
+            app_obj.created_at.strftime('%Y-%m-%d %H:%M')
+        ]
+        ws.append(row)
+        curr_row_idx = ws.max_row
+        ws.row_dimensions[curr_row_idx].height = 22
+
+        # Стилизуем ячейки с данными
+        for col_idx in range(1, 11):
+            cell = ws.cell(row=curr_row_idx, column=col_idx)
+            cell.font = font_data
+            cell.border = thin_border
+            # ID, Телефон, Статус, IP и Дата — по центру, остальное по левому краю
+            if col_idx in [1, 5, 8, 9, 10]:
+                cell.alignment = align_center
+            else:
+                cell.alignment = align_left
+
+    # Автоматическая настройка ширины столбцов под размер текста
+    for col in ws.columns:
+        max_len = 0
+        col_letter = col[0].column_letter
+        for cell in col:
+            # Игнорируем объединенный заголовок первой строки при расчете ширины
+            if cell.row == 1:
+                continue
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    # Сохраняем в память
+    file_stream = io.BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
+
+    # Отдаем файл пользователю
+    filename = f"Applications_Ball_2026_{func.now()}.xlsx"
+    return StreamingResponse(
+        file_stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=applications_ball_2026.xlsx"}
     )
 
 @app.post("/admin/approve/{app_id}")
