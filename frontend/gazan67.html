@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Программа мероприятия - Танцевальный бал</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: #0a192f;
+            min-height: 100vh;
+            padding: 30px 20px;
+            background-image: 
+                radial-gradient(ellipse at 20% 30%, rgba(30, 60, 114, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 70%, rgba(30, 60, 114, 0.3) 0%, transparent 60%);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Заголовок */
+        .title {
+            text-align: center;
+            color: #d4af37;
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-shadow: 
+                0 0 20px rgba(212, 175, 55, 0.15),
+                0 0 40px rgba(212, 175, 55, 0.05);
+            position: relative;
+            padding-bottom: 18px;
+        }
+
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+            border-radius: 2px;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .title span {
+            background: linear-gradient(135deg, #d4af37, #f5d061, #d4af37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Название мероприятия */
+        .event-name {
+            text-align: center;
+            color: #e8edf5;
+            font-size: 22px;
+            font-weight: 500;
+            margin: 20px 0 30px 0;
+            letter-spacing: 1px;
+        }
+
+        .event-name .icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Информация о мероприятии */
+        .event-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 35px;
+            padding: 15px 20px;
+            background: rgba(10, 25, 47, 0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+        }
+
+        .event-info .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #8899b4;
+            font-size: 14px;
+        }
+
+        .event-info .info-item .icon {
+            font-size: 18px;
+        }
+
+        .event-info .info-item .value {
+            color: #e8edf5;
+            font-weight: 500;
+        }
+
+        /* Расписание */
+        .schedule {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Карточка события */
+        .schedule-item {
+            background: linear-gradient(145deg, #0d2137, #0a192f);
+            border: 1px solid rgba(212, 175, 55, 0.08);
+            border-radius: 14px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .schedule-item:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Акцент на событие с треком */
+        .featured-track-item {
+            border-color: rgba(212, 175, 55, 0.2);
+            background: linear-gradient(145deg, #112946, #0a192f);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.03);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Время */
+        .schedule-time {
+            min-width: 90px;
+            text-align: center;
+            padding-right: 20px;
+            border-right: 2px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .schedule-time .time {
+            color: #d4af37;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .schedule-time .duration {
+            color: #4a5a7a;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* Содержание */
+        .schedule-content {
+            flex: 1;
+        }
+
+        .schedule-content .title-event {
+            color: #e8edf5;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .schedule-content .description {
+            color: #8899b4;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Контейнер для встроенного плеера */
+        .audio-player-wrapper {
+            margin-top: 12px;
+            background: rgba(10, 25, 47, 0.7);
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .audio-player-wrapper audio {
+            width: 100%;
+            height: 30px;
+            outline: none;
+        }
+
+        /* Иконка события */
+        .schedule-icon {
+            font-size: 28px;
+            min-width: 40px;
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        /* Декоративные разделители */
+        .section-divider {
+            text-align: center;
+            padding: 5px 0;
+            color: #2a4060;
+            font-size: 12px;
+            letter-spacing: 2px;
+            position: relative;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1));
+        }
+
+        .section-divider::before {
+            left: 0;
+        }
+
+        .section-divider::after {
+            right: 0;
+            background: linear-gradient(270deg, transparent, rgba(212, 175, 55, 0.1));
+        }
+
+        /* Кнопка "Назад" */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #8899b4;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 30px;
+            transition: color 0.3s ease;
+            padding: 10px 20px;
+            background: rgba(10, 25, 47, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.08);
+        }
+
+        .btn-back:hover {
+            color: #d4af37;
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        .btn-back .arrow {
+            font-size: 18px;
+        }
+
+        /* Адаптив */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 28px;
+            }
+
+            .event-name {
+                font-size: 18px;
+            }
+
+            .event-info {
+                gap: 15px;
+                padding: 12px 15px;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .schedule-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                padding: 15px 18px;
+            }
+
+            .schedule-time {
+                min-width: auto;
+                padding-right: 0;
+                border-right: none;
+                border-bottom: 2px solid rgba(212, 175, 55, 0.1);
+                padding-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .schedule-time .
+            duration {
+                margin-top: 0;
+            }
+
+            .schedule-icon {
+                display: none;
+            }
+
+            .schedule-content .title-event {
+                font-size: 15px;
+            }
+
+            .schedule-content .description {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .event-name {
+                font-size: 16px;
+            }
+
+            .event-name .icon {
+                font-size: 24px;
+            }
+
+            .schedule-item {
+                padding: 12px 15px;
+            }
+
+            .schedule-time .time {
+                font-size: 16px;
+            }
+
+            .schedule-content .title-event {
+                font-size: 14px;
+            }
+
+            .btn-back {
+                font-size: 13px;
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <h1 class="title">
+            <span>✦ Программа ✦</span>
+        </h1>
+
+        <!-- Название мероприятия -->
+        <div class="event-name">
+            <span class="icon">💃</span>
+            Танцевальный бал
+        </div>
+
+        <!-- Информация о мероприятии -->
+        <div class="event-info">
+            <div class="info-item">
+                <span class="icon">📅</span>
+                <span>Дата: <span class="value">28 июня 2026</span></span>
+            </div>
+            <div class="info-item">
+                <span class="icon">🕐</span>
+                <span>Время: <span class="value">18:00 - 23:00</span></span>
+            </div>
+        </div>
+
+        <!-- Расписание -->
+        <div class="schedule">
+
+            <!-- Открытие бала с треком Газана -->
+            <div class="schedule-item featured-track-item">
+                <div class="schedule-time">
+                    <div class="time">18:00</div>
+                    <div class="duration">10 мин</div>
+                </div>
+                <div class="schedule-icon" style="opacity: 1;">🔥</div>
+                <div class="schedule-content">
+                    <div class="title-event" style="color: #f5d061;">Торжественное открытие под трек Gazan — "67"</div>
+                    <div class="description">Вступительное слово организаторов, мощный старт и объявление о начале бала. Послушать трек:</div>
+                    
+                    <!-- Аудиоплеер -->
+                    <div class="audio-player-wrapper">
+                        <audio controls>
+                            <source src="gazan_67.mp3" type="audio/mpeg">
+                            Ваш браузер не поддерживает встроенные аудиоплееры.
+                        </audio>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Первый танец -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">18:10</div>
+                    <div class="duration">20 мин</div>
+                </div>
+                <div class="schedule-icon">💃</div>
+                <div class="schedule-content">
+                    <div class="title-event">Первый танец</div>
+                    <div class="description">Традиционный вальс открытия бала для всех участников</div>
+                </div>
+            </div>
+
+            <!-- Раздел: Основная часть -->
+            <div class="section-divider">✦ ✦ ✦</div>
+
+            <!-- Мастер-класс -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">18:30</div>
+                    <div class="duration">45 мин</div>
+                </div>
+                <div class="schedule-icon">📖</div>
+                <div class="schedule-content">
+                    <div class="title-event">Мастер-класс по танцам</div>
+                    <div class="description">Обучение основным танцевальным движениям от профессиональных хореографов</div>
+                </div>
+            </div>
+
+            <!-- Свободные танцы -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">19:15</div>
+                    <div class="duration">60 мин</div>
+                </div>
+                <div class="schedule-icon">🎵</div>
+                <div class="schedule-content">
+                    <div class="title-event">Свободные танцы</div>
+                    <div class="description">Танцевальная программа под живую музыку, возможность применить полученные навыки</div>
+                </div>
+            </div>
+
+            <!-- Раздел: Антракт -->
+            <div class="section-divider">✦ ✦ ✦</div>
+
+            <!-- Антракт -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">20:15</div>
+                    <div class="duration">30 мин</div>
+                </div>
+                <div class="schedule-icon">☕</div>
+                <div class="schedule-content">
+                    <div class="title-event">Антракт</div>
+                    <div class="description">Кофе-брейк, общение, фотосессия</div>
+                </div>
+            </div>
+
+            <!-- Раздел: Вторая часть -->
+            <div class="section-divider">✦ ✦ ✦</div>
+
+            <!-- Конкурсы -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">20:45</div>
+                    <div class="duration">40 мин</div>
+                </div>
+                <div class="schedule-icon">🏆</div>
+                <div class="schedule-content">
+                    <div class="title-event">Танцевальные конкурсы</div>
+                    <div class="description">Соревнования между парами, лучшие танцевальные номера, призы для победителей</div>
+                </div>
+            </div>
+
+            <!-- Концертная программа -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">21:25</div>
+                    <div class="duration">30 мин</div>
+                </div>
+                <div class="schedule-icon">🎭</div>
+                <div class="schedule-content">
+                    <div class="title-event">Концертная программа</div>
+                    <div class="description">Выступления приглашённых артистов, танцевальные номера профессионалов</div>
+                </div>
+            </div>
+
+            <!-- Свободные танцы -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">21:55</div>
+                    <div class="duration">45 мин</div>
+                </div>
+                <div class="schedule-icon">🎶</div>
+                <div class="schedule-content">
+                    <div class="title-event">Заключительные танцы</div>
+                    <div class="description">Финальная танцевальная программа, завершение бала</div>
+                </div>
+            </div>
+
+            <!-- Закрытие -->
+            <div class="schedule-item">
+                <div class="schedule-time">
+                    <div class="time">22:40</div>
+                    <div class="duration">20 мин</div>
+                </div>
+                <div class="schedule-icon">🎊</div>
+                <div class="schedule-content">
+                    <div class="title-event">Закрытие бала</div>
+                    <div class="description">Подведение итогов, благодарности участникам, прощальный вальс</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Кнопка "Назад" -->
+        <a href="#" class="btn-back" onclick="history.back(); return false;">
+            <span class="arrow">←</span> Назад к мероприятиям
+        </a>
+    </div>
+</body>
+</html>

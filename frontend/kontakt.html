@@ -1,0 +1,443 @@
+<!-- Раздел: Контакты (Ультра-модерн с интерактивной лентой) -->
+<section class="contacts-cyber-section" id="contacts">
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="cyber-container">
+        <!-- Левый блок: Фиксированный инфо-панель -->
+        <div class="cyber-sticky-panel">
+            <div class="cyber-badge">Связь 24/7</div>
+            <h2 class="cyber-title">Команда <br>управления <br><span class="gold-neon-text">бала</span></h2>
+            <p class="cyber-desc">
+                Возникли вопросы по дресс-коду, билетам или координации? Мы создали эту цепочку быстрого реагирования, чтобы помочь вам в любую секунду.
+            </p>
+            <div class="cyber-line-decor"></div>
+        </div>
+
+        <!-- Правый блок: Интерактивная вертикальная лента -->
+        <div class="cyber-timeline">
+            
+            <!-- Шаг 1: Вероника -->
+            <div class="timeline-item main-leader">
+                <div class="timeline-node">👑</div>
+                <div class="timeline-content-card">
+                    <div class="card-top">
+                        <span class="role-tag gold-border">Главный организатор</span>
+                        <div class="status-indicator"><span class="pulse-ring"></span>В сети</div>
+                    </div>
+                    <h3 class="member-name">Халилова Вероника</h3>
+                    <a href="tel:+79190122608" class="member-phone">+7 (919) 012-26-08</a>
+                    <p class="member-info">Стратегические решения, VIP-зоны, пресса и генеральный тайминг бальной ночи.</p>
+                </div>
+            </div>
+
+            <!-- Шаг 2: Сережа -->
+            <div class="timeline-item">
+                <div class="timeline-node">⚡</div>
+                <div class="timeline-content-card">
+                    <div class="card-top">
+                        <span class="role-tag silver-border">Помощник организатора</span>
+                        <div class="status-indicator"><span class="pulse-ring"></span>В сети</div>
+                    </div>
+                    <h3 class="member-name">Серёжа Матвиенко</h3>
+                    <a href="tel:+79157960568" class="member-phone">+7 (915) 796-05-68</a>
+                    <p class="member-info">Технический продакшн, запуск оборудования, работа со сценой и светом.</p>
+                </div>
+            </div>
+
+            <!-- Шаг 3: Координаторы (Павел, Григорий, Егор) -->
+            <div class="timeline-item helpers-special-item">
+                <div class="timeline-node">🤝</div>
+                <div class="timeline-content-card helpers-card">
+                    <h4 class="helpers-title-modern">Линейные координаторы в зале</h4>
+                    <p class="helpers-desc-modern">Встретят вас на входе, помогут найти фотозону и ответят на любые вопросы на площадке:</p>
+                    
+                    <div class="cyber-tags-container">
+                        <div class="cyber-tag-pill">
+                            <span class="pill-icon">🙋‍♂️</span>
+                            <span class="pill-name">Павел</span>
+                        </div>
+                        <div class="cyber-tag-pill">
+                            <span class="pill-icon">🙋‍♂️</span>
+                            <span class="pill-name">Григорий</span>
+                        </div>
+                        <div class="cyber-tag-pill">
+                            <span class="pill-icon">🙋‍♂️</span>
+                            <span class="pill-name">Егор</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Стили нового поколения -->
+<style>
+    .contacts-cyber-section {
+        background-color: #111420; /* Твой синий фон */
+        color: #ffffff;
+        padding: 140px 20px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Интеллектуальное неоновое размытие */
+    .
+    ambient-glow-1 {
+        position: absolute;
+        top: 25%;
+        right: -15%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(223, 183, 67, 0.05) 0%, rgba(0,0,0,0) 70%);
+        pointer-events: none;
+    }
+    .ambient-glow-2 {
+        position: absolute;
+        bottom: -10%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(0, 150, 255, 0.04) 0%, rgba(0,0,0,0) 70%);
+        pointer-events: none;
+    }
+
+    .cyber-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1.3fr;
+        gap: 80px;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Левая липкая панель */
+    .cyber-sticky-panel {
+        position: sticky;
+        top: 60px;
+    }
+
+    .cyber-badge {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-weight: 800;
+        color: #dfb743;
+        background: rgba(223, 183, 67, 0.08);
+        padding: 6px 16px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 24px;
+        border: 1px solid rgba(223, 183, 67, 0.2);
+    }
+
+    .cyber-title {
+        font-size: 4rem;
+        line-height: 1.05;
+        font-weight: 900;
+        letter-spacing: -2px;
+        margin: 0 0 25px 0;
+        text-transform: uppercase;
+    }
+
+    .gold-neon-text {
+        background: linear-gradient(90deg, #dfb743 0%, #fff6ca 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 40px rgba(223, 183, 67, 0.2);
+    }
+
+    .cyber-desc {
+        font-size: 1.1rem;
+        color: #64748b;
+        line-height: 1.7;
+        max-width: 400px;
+        margin-bottom: 40px;
+    }
+
+    .cyber-line-decor {
+        width: 80px;
+        height: 2px;
+        background: linear-gradient(90deg, #dfb743, transparent);
+    }
+
+    /* Правая часть: Интерактивная лента времени/команды */
+    .cyber-timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    /* Центральная ось ленты */
+    .cyber-timeline::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 15px;
+        bottom: 15px;
+        width: 2px;
+        background: linear-gradient(180deg, rgba(223, 183, 67, 0.4) 0%, rgba(255,255,255,0.05) 70%, transparent 100%);
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 40px;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Интерактивные узлы на оси */
+    .timeline-node {
+        position: absolute;
+        left: -51px;
+        top: 20px;
+        width: 30px;
+        height: 30px;
+        background: #111420;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        z-index: 5;
+        transition: all 0.4s ease;
+    }
+
+    .timeline-item:hover .timeline-node {
+        border-color: #dfb743;
+        box-shadow: 0 0 15px rgba(223, 183, 67, 0.4);
+        transform: scale(1.15);
+    }
+
+    /* Ультра-карточки со слоёным стеклом */
+    .timeline-content-card {
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        border-radius: 24px;
+        padding: 35px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .timeline-item:hover .timeline-content-card {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.08);
+        transform: translateX(10px);
+        box-shadow: -10px 20px 40px rgba(0,0,0,0.5);
+    }
+
+    /* Золотое свечение для карточки Вероники */
+    .main-leader:hover .timeline-content-card {
+        border-color: rgba(223, 183, 67, 0.3);
+        box-shadow: -10px 20px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(223, 183, 67, 0.02);
+    }
+
+    .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .role-tag {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        padding: 5px 14px;
+        border-radius: 6px;
+    }
+
+    .gold-border {
+        border: 1px solid rgba(223, 183, 67, 0.3);
+        color: #dfb743;
+        background: rgba(223, 183, 67, 0.03);
+    }
+
+    .silver-border {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
+        background: rgba(255, 255, 255, 0.01);
+    }
+
+    /* Пульсирующий статус активности */
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        color: #10b981;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .pulse-ring {
+        width: 6px;
+        height: 6px;
+        background-color: #10b981;
+        border-radius: 50%;
+        position: relative;
+    }
+
+    .pulse-ring::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: #10b981;
+        border-radius: 50%;
+        animation: ripple 1.8s infinite ease-out;
+    }
+
+    @keyframes ripple {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(3.5); opacity: 0; }
+    }
+
+    .member-name {
+        font-size: 1.75rem;
+        font-weight: 900;
+        margin: 0 0 6px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .member-phone {
+        font-size: 1.25rem;
+        color: #dfb743;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 15px;
+        transition: color 0.3s ease;
+    }
+
+    .member-phone:hover {
+        color: #ffffff;
+    }
+
+    .member-info {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .timeline-item:hover .member-info {
+        color: #94a3b8;
+    }
+
+    /* Специфический контент для возвращенных помощников */
+    .helpers-card {
+        background: rgba(255, 255, 255, 0.005) !important;
+    }
+
+    .helpers-title-modern {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin: 0 0 10px 0;
+        letter-spacing: -0.3px;
+    }
+
+    .helpers-desc-modern {
+        font-size: 0.95rem;
+        color: #64748b;
+        margin-bottom: 25px;
+        line-height: 1.6;
+    }
+
+    .cyber-tags-container {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* Ваши любимые плашки в техно-обработке */
+    .cyber-tag-pill {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 10px 24px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .cyber-tag-pill:hover {
+        border-color: rgba(223, 183, 67, 0.4);
+        background: rgba(223, 183, 67, 0.03);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+
+    .pill-icon {
+        font-size: 1.05rem;
+    }
+
+    .pill-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #cbd5e1;
+    }
+
+    .cyber-tag-pill:hover .pill-name {
+        color: #ffffff;
+    }
+
+    /* Адаптивный дизайн для планшетов и мобильных устройств */
+    @media (max-width: 1024px) {
+        .cyber-container {
+            grid-template-columns: 1fr;
+            gap: 60px;
+        }
+        .cyber-sticky-panel {
+            position: relative;
+            top: 0;
+        }
+        .cyber-title {
+            font-size: 3rem;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .cyber-title {
+            font-size: 2.5rem;
+        }
+        .cyber-timeline {
+            padding-left: 25px;
+        }
+        .cyber-timeline::before {
+            left: 2px;
+        }
+        .timeline-node {
+            left: -37px;
+            width: 24px;
+            height: 24px;
+            font-size: 0.75rem;
+            top: 24px;
+        }
+        .timeline-content-card {
+            padding: 25px 20px;
+        }
+        .card-top {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .cyber-tags-container {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .cyber-tag-pill {
+            justify-content: center;
+        }
+    }
+</style>

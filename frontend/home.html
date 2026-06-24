@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школьный Танцевальный Бал</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- Общие стили --- */
+        :root {
+            --bg-color: #030b1e;
+            --bg-light: #061331;
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --text-light: #ffffff;
+            --text-muted: #a0aec0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- Шапка (Header) --- */
+        header {
+            background-color: rgba(3, 11, 30, 0.95);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Playfair Display', serif;
+            color: var(--gold-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .logo img, .logo i {
+            font-size: 1.5rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .nav-menu a:hover {
+            color: var(--gold-primary);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 15px;
+        }
+
+        /* --- Главный экран (Hero Section) --- */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            padding-top: 100px;
+            display: flex;
+            align-items: center;
+            background: radial-gradient(circle at 70% 30%, rgba(6, 19, 49, 0.2), var(--bg-color));
+        }
+
+        /* Имитация красивого фона с парой */
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 55%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=1000') no-repeat center center;
+            background-size: cover;
+            mask-image: linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0));
+            -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0));
+            z-index: 1;
+            opacity: 0.75;
+        }
+
+        .hero .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+        }
+
+        .hero-content {
+            max-width: 550px;
+        }
+
+        .hero-subtitle-top {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            color: var(--gold-primary);
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .hero-descr-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            font-style: italic;
+            color: var(--gold-light);
+            margin-bottom: 15px;
+        }
+
+        .hero-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 35px;
+            white-space: pre-line;
+        }
+
+        /* --- Таймер (Countdown) --- */
+        .countdown-box {
+            background: rgba(6, 19, 49, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            padding: 20px;
+            max-width: 400px;
+        }
+
+        .countdown-title {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--gold-light);
+            margin-bottom: 15px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .countdown-timer {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .timer-item .number {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--text-light);
+            display: block;
+            font-weight: 600;
+        }
+
+        .timer-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Секция "О мероприятии" (About Section) --- */
+        .about-section {
+            padding: 80px 0;
+            background-color: var(--bg-color);
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 1px;
+            background-color: var(--gold-primary);
+            margin: 10px auto 0;
+        }
+
+        .grid-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+        }
+
+        .info-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card h3 i {
+            color: var(--gold-primary);
+            font-size: 1.1rem;
+        }
+
+        .info-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .info-card ul {
+            list-style: none;
+        }
+
+        .info-card ul li {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .info-card ul li::before {
+            content: '•';
+            color: var(--gold-primary);
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        /* --- Адаптивность для мобильных устройств --- */
+        @media (max-width: 992px) {
+            .hero-bg {
+                width: 100%;
+                opacity: 0.3;
+            }
+            .grid-info {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .hero-title {
+                font-size: 2.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none; /* Для полноценного продакшена тут обычно делают бургер-меню */
+            }
+            .hero-title {
+                font-size: 2.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-person-dancing"></i> <span>Танцевальный Бал</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#">О мероприятии</a></li>
+                <li><a href="#">Программа</a></li>
+                <li><a href="#">Место</a></li>
+                <li><a href="#">Регистрация</a></li>
+                <li><a href="#">Контакты</a></li>
+                <li><button class="theme-toggle"><i class="fa-regular fa-moon"></i></button></li>
+            </ul>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-subtitle-top">Школьный</div>
+                <h1 class="hero-title">Танцевальный<br>Бал</h1>
+                
+                <div class="hero-descr-title">Вечер грации, музыки и волшебства</div>
+                <p class="hero-text">Погрузитесь в атмосферу классического бала:
+танцы, музыка, новые знакомства
+и незабываемые впечатления!</p>
+
+                <div class="countdown-box">
+                    <div class="countdown-title">До начала бала осталось:</div>
+                    <div class="countdown-timer">
+                        <div class="timer-item">
+                            <span class="number" id="days">12</span>
+                            <span class="label">дней</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="hours">08</span>
+                            <span class="label">часов</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="minutes">45</span>
+                            <span class="label">минут</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="seconds">33</span>
+                            <span class="label">секунд</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="container">
+            <h2 class="section-title">О мероприятии</h2>
+            
+            <div class="grid-info">
+                <div class="info-card">
+                    <h3><i class="fa-regular fa-star"></i> О мероприятии</h3>
+                    <p>Танцевальный бал – это традиционное школьное мероприятие, объединяющее элегантность, культуру и творчество.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3><i class="fa-solid fa-bullseye"></i> Цели</h3>
+                    <p>Развитие музыкальной культуры, навыков общения и создание незабываемых воспоминаний.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3><i class="fa-solid fa-users"></i> Ключевые факты</h3>
+                    <ul>
+                        <li>Ежегодное событие</li>
+                        <li>Участие более 200 учеников</li>
+                        <li>Живая музыка и мастер-классы</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <script>
+        // Установите дату, до которой идет отсчет (например, плюс 12 дней от текущей)
+        const countdownDate = new Date();
+        countdownDate.setDate(countdownDate.getDate() + 12); 
+        countdownDate.setHours(countdownDate.getHours() + 8);
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = countdownDate - now;
+
+            if (distance < 0) {
+                clearInterval(timerInterval);
+                document.querySelector(".countdown-title").innerText = "Бал уже начался!";
+                return;
+            }
+
+            // Вычисления времени
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Вывод данных на страницу с добавлением ведущего нуля
+            document.getElementById("days").innerText = days < 10 ? "0" + days : days;
+            document.getElementById("hours").innerText = hours < 10 ? "0" + hours : hours;
+            document.getElementById("minutes").innerText = minutes < 10 ? "0" + minutes : minutes;
+            document.getElementById("seconds").innerText = seconds < 10 ? "0" + seconds : seconds;
+        }
+
+        // Обновление каждую секунду
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Первый запуск сразу
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школьный Танцевальный Бал</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="container nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-person-dancing"></i>
+                <span>Танцевальный Бал</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#">О мероприятии</a></li>
+                <li><a href="#">Программа</a></li>
+                <li><a href="#">Место</a></li>
+                <li><a href="#">Регистрация</a></li>
+                <li><a href="#">Контакты</a></li>
+                <li><button class="theme-toggle"><i class="fa-regular fa-moon"></i></button></li>
+            </ul>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-subtitle-top">Школьный</div>
+                <h1 class="hero-title">Танцевальный<br>Бал</h1>
+                
+                <div class="hero-descr-title">Вечер грации, музыки и волшебства</div>
+                <p class="hero-text">Погрузитесь в атмосферу классического бала:
+танцы, музыка, новые знакомства
+и незабываемые впечатления!</p>
+
+                <div class="countdown-box">
+                    <div class="countdown-title">До начала бала осталось:</div>
+                    <div class="countdown-timer">
+                        <div class="timer-item">
+                            <span class="number" id="days">12</span>
+                            <span class="label">дней</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="hours">08</span>
+                            <span class="label">часов</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="minutes">45</span>
+                            <span class="label">минут</span>
+                        </div>
+                        <div class="timer-item">
+                            <span class="number" id="seconds">33</span>
+                            <span class="label">секунд</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="container">
+            <h2 class="section-title">О мероприятии</h2>
+            
+            <div class="grid-info">
+                <div class="info-card">
+                    <h3><i class="fa-regular fa-star"></i> О мероприятии</h3>
+                    <p>Танцевальный бал – это традиционное школьное мероприятие, объединяющее элегантность, культуру и творчество.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3><i class="fa-solid fa-bullseye"></i> Цели</h3>
+                    <p>Развитие музыкальной культуры, навыков общения и создание незабываемых воспоминаний.</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3><i class="fa-solid fa-users"></i> Ключевые факты</h3>
+                    <ul>
+                        <li>Ежегодное событие</li>
+                        <li>Участие более 200 учеников</li>
+                        <li>Живая музыка и мастер-классы</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        </section>
+
+    <script src="script.js"></script>
+</body>
+</html>

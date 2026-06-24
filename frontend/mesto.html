@@ -1,0 +1,195 @@
+<section class="location-section" id="location">
+    <div class="decor-blur-3"></div>
+    
+    <div class="location-container">
+        <div class="location-info glass-effect">
+            <span class="location-subtitle">Где всё произойдет</span>
+            <h2 class="location-title">Локация <br><span class="gold-gradient">и координаты</span></h2>
+            
+            <div class="info-item">
+                <div class="info-icon">📍</div>
+                <div class="info-text">
+                    <h4>Адрес</h4>
+                    <p>г. Москва, улица Пушкина, дом Колотушкина</p>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-icon">🚗</div>
+                <div class="info-text">
+                    <h4>Как добраться</h4>
+                    <p>Ближайшая станция метро находится в пешей доступности. Для гостей на машинах предусмотрена охраняемая парковка.</p>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-icon">🚪</div>
+                <div class="info-text">
+                    <h4>Вход</h4>
+                    <p>Сбор гостей начинается за 45 минут до официального старта. Не забудьте показать ваш пригласительный билет на контроле.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="location-map-container glass-effect">
+            <iframe 
+                class="google-map"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2250.776657920199!2d37.20845771583489!3d55.60960710811915!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46b556db6c250621%3A0x3cb3b12dd3722022!2z0YPQuy4g0J_Rg9GI0LrQuNC90LAsINCc0L7RgdC60LLQsCwg0KDQvtGB0YHQQuNGPLCAxNDMzNTA!5e0!3m2!1sru!2sru!4v1718967000000!5m2!1sru!2sru" 
+                allowfullscreen="" 
+                loading="lazy" 
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+    </div>
+</section>
+
+<style>
+    .location-section {
+        background-color: #111420; /* Твой фирменный синий фон */
+        color: #ffffff;
+        padding: 100px 20px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Фоновое свечение для баланса композиции */
+    .decor-blur-3 {
+        position: absolute;
+        top: 40%;
+        right: -10%;
+        width: 450px;
+        height: 450px;
+        background: radial-gradient(circle, rgba(223, 183, 67, 0.06) 0%, rgba(0,0,0,0) 70%);
+        pointer-events: none;
+    }
+
+    .location-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 50px;
+        align-items: stretch;
+    }
+
+    /* Левая колонка со стеклянным эффектом */
+    .location-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .location-subtitle {
+        color: #dfb743;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+
+    .location-title {
+        font-size: 2.8rem;
+        line-height: 1.2;
+        font-weight: 800;
+        margin-bottom: 40px;
+        letter-spacing: -1px;
+    }
+
+    /* Строки с описанием деталей */
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-icon {
+        font-size: 1.8rem;
+        background: rgba(223, 183, 67, 0.1);
+        padding: 12px;
+        border-radius: 12px;
+        line-height: 1;
+        border: 1px solid rgba(223, 183, 67, 0.2);
+    }
+
+    .info-text h4 {
+        font-size: 1.15rem;
+        color: #ffffff;
+        margin: 0 0 5px 0;
+        font-weight: 700;
+    }
+
+    .info-text p {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin: 0;
+        line-height: 1.5;
+    }
+    /* Правая колонка: обертка для карты */
+    .location-map-container {
+        padding: 15px; /* Аккуратный отступ внутри стеклянной рамки */
+        min-height: 450px;
+        display: flex;
+        border-radius: 24px; /* Чуть более округлые углы для футуризма */
+    }
+
+    .google-map {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 16px;
+        filter: grayscale(0.6) invert(0.92) contrast(1.2) hue-rotate(180deg); /* Стильный темный фильтр для карты под цвет сайта */
+        opacity: 0.85;
+        transition: all 0.4s ease;
+    }
+
+    /* При наведении карта становится ярче и "оживает" */
+    .location-map-container:hover .google-map {
+        filter: grayscale(0.2) invert(0.9) contrast(1.1) hue-rotate(180deg);
+        opacity: 1;
+    }
+
+    /* Повторение общих классов для интеграции */
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .gold-gradient {
+        background: linear-gradient(90deg, #dfb743 0%, #fff0a5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Адаптив под планшеты и телефоны */
+    @media (max-width: 1024px) {
+        .location-container {
+            grid-template-columns: 1fr;
+            gap: 35px;
+        }
+        .location-map-container {
+            min-height: 350px;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .location-title {
+            font-size: 2.2rem;
+        }
+        .glass-effect {
+            padding: 25px;
+        }
+    }
+</style>
