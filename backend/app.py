@@ -535,27 +535,25 @@ async def export_applications_to_excel(request: Request, db: Session = Depends(g
     if not verify_admin(request):
         return JSONResponse(status_code=401, content={'error': 'Unauthorized'})
 
-    # Получаем все заявки из БД со всеми связями
+    # Импортируем утилиту для безопасного получения букв колонок
+    from openpyxl.utils import get_column_letter
+
+    # Получаем все данные из базы
     apps_raw = db.query(Application).order_by(Application.id.desc()).all()
+    users_raw = db.query(User).order_by(User.id.desc()).all()
 
     # Создаем Excel-книгу
     wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Заявки на Бал 2026"
 
-    # Включаем сетку таблицы
-    ws.views.sheetView[0].showGridLines = True
-
-    # Стили для красивого оформления таблицы
+    # Общие стили для красивого оформления таблиц
     font_title = Font(name='Calibri', size=16, bold=True, color='804000')
     font_header = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
     font_data = Font(name='Calibri', size=11)
     
-    fill_header = PatternFill(start_color='B17A20', end_color='B17A20', fill_type='solid') # Осенний золотой цвет
+    fill_header = PatternFill(start_color='B17A20', end_color='B17A20', fill_type='solid') # Золотой осенний
     align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
     align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
 
-    # Тонкая рамка для ячеек
     thin_border = Border(
         left=Side(style='thin', color='D3D3D3'),
         right=Side(style='thin', color='D3D3D3'),
@@ -563,32 +561,38 @@ async def export_applications_to_excel(request: Request, db: Session = Depends(g
         bottom=Side(style='thin', color='D3D3D3')
     )
 
-    # 1. Заголовок таблицы
-    ws.merge_cells('A1:J1')
-    ws['A1'] = "СПИСОК ЗАЯВОК НА УЧАСТИЕ — ОСЕННИЙ БАЛ 2026"
-    ws['A1'].font = font_title
-    ws['A1'].alignment = Alignment(horizontal='left', vertical='center')
-    ws.row_dimensions[1].height = 40
+    # ==========================================
+    # ЛИСТ 1: ЗАЯВКИ НА УЧАСТИЕ
+    # ==========================================
+    ws1 = wb.active
+    ws1.title = "Заявки на Бал"
+    ws1.views.sheetView[0].showGridLines = True
 
-    # Пустая строка-разделитель
-    ws.append([])
+    # Заголовок листа 1
+    ws1.merge_cells('A1:J1')
+    ws1['A1'] = "СПИСОК ЗАЯВОК НА УЧАСТИЕ — ОСЕННИЙ БАЛ 2026"
+    ws1['A1'].font = font_title
+    ws1['A1'].alignment = Alignment(horizontal='left', vertical='center')
+    ws1.row_dimensions[1].height = 40
 
-    # 2. Шапка таблицы
-    headers = [
+    ws1.append([]) # Пустая строка-разделитель
+
+    # Шапка листа 1
+    headers1 = [
         "ID Заявки", "ФИО Участника", "Класс / Группа", "Email", 
         "Телефон", "Мероприятие", "Пожелания", "Статус", "IP-адрес", "Дата подачи"
     ]
-    ws.append(headers)
-    ws.row_dimensions[3].height = 28
+    ws1.append(headers1)
+    ws1.row_dimensions[3].height = 28
 
     for col_idx in range(1, 11):
-        cell = ws.cell(row=3, column=col_idx)
+        cell = ws1.cell(row=3, column=col_idx)
         cell.font = font_header
         cell.fill = fill_header
         cell.alignment = align_center
         cell.border = thin_border
 
-    # 3. Наполнение данными
+    # Данные листа 1
     for app_obj in apps_raw:
         status_ru = {
             'pending': 'Ожидает модерации ⏳',
@@ -608,44 +612,114 @@ async def export_applications_to_excel(request: Request, db: Session = Depends(g
             app_obj.user.ip_address if app_obj.user else "—",
             app_obj.created_at.strftime('%Y-%m-%d %H:%M')
         ]
-        ws.append(row)
-        curr_row_idx = ws.max_row
-        ws.row_dimensions[curr_row_idx].height = 22
+        ws1.append(row)
+        curr_row_idx = ws1.max_row
+        ws1.row_dimensions[curr_row_idx].height = 22
 
-        # Стилизуем ячейки с данными
         for col_idx in range(1, 11):
-            cell = ws.cell(row=curr_row_idx, column=col_idx)
+            cell = ws1.cell(row=curr_row_idx, column=col_idx)
             cell.font = font_data
             cell.border = thin_border
-            # ID, Телефон, Статус, IP и Дата — по центру, остальное по левому краю
             if col_idx in [1, 5, 8, 9, 10]:
                 cell.alignment = align_center
             else:
                 cell.alignment = align_left
 
-    # Автоматическая настройка ширины столбцов под размер текста
-    for col in ws.columns:
+    # БЕЗОПАСНАЯ подгонка ширины колонок для листа 1
+    for col in ws1.columns:
         max_len = 0
-        col_letter = col[0].column_letter
+        col_letter = get_column_letter(col[0].column) # <-- Исправлено здесь!
         for cell in col:
-            # Игнорируем объединенный заголовок первой строки при расчете ширины
             if cell.row == 1:
                 continue
             if cell.value:
                 max_len = max(max_len, len(str(cell.value)))
-        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+        ws1.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
-    # Сохраняем в память
+
+    # ==========================================
+    # ЛИСТ 2: ПРОФИЛИ УЧАСТНИКОВ
+    # ==========================================
+    ws2 = wb.create_sheet(title="Профили участников")
+    ws2.views.sheetView[0].showGridLines = True
+
+    # Заголовок листа 2
+    ws2.merge_cells('A1:H1')
+    ws2['A1'] = "БАЗА ЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ"
+    ws2['A1'].font = font_title
+    ws2['A1'].alignment = Alignment(horizontal='left', vertical='center')
+    ws2.row_dimensions[1].height = 40
+
+    ws2.append([]) # Пустая строка
+
+    # Шапка листа 2
+    headers2 = [
+        "ID Пользователя", "ФИО", "Класс / Группа", "Email", 
+        "Телефон", "Роль в системе", "IP-адрес при реге", "Дата регистрации"
+    ]
+    ws2.append(headers2)
+    ws2.row_dimensions[3].height = 28
+
+    for col_idx in range(1, 9):
+        cell = ws2.cell(row=3, column=col_idx)
+        cell.font = font_header
+        cell.fill = fill_header
+        cell.alignment = align_center
+        cell.border = thin_border
+
+    # Данные листа 2
+    for u in users_raw:
+        role_ru = {
+            'admins': 'Администратор 👑',
+            'user': 'Участник 💃🕺',
+            'candidate': 'Кандидат ⏳'
+        }.get(u.role, u.role)
+
+        row = [
+            u.id,
+            u.fio,
+            u.class_group,
+            u.email,
+            u.phone if u.phone else "—",
+            role_ru,
+            u.ip_address,
+            u.reg_time.strftime('%Y-%m-%d %H:%M') if u.reg_time else "—"
+        ]
+        ws2.append(row)
+        curr_row_idx = ws2.max_row
+        ws2.row_dimensions[curr_row_idx].height = 22
+
+        for col_idx in range(1, 9):
+            cell = ws2.cell(row=curr_row_idx, column=col_idx)
+            cell.font = font_data
+            cell.border = thin_border
+            if col_idx in [1, 5, 6, 7, 8]:
+                cell.alignment = align_center
+            else:
+                cell.alignment = align_left
+
+    # БЕЗОПАСНАЯ подгонка ширины колонок для листа 2
+    for col in ws2.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column) # <-- Исправлено здесь!
+        for cell in col:
+            if cell.row == 1:
+                continue
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws2.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+
+    # Сохраняем книгу в буфер памяти
     file_stream = io.BytesIO()
     wb.save(file_stream)
     file_stream.seek(0)
 
-    # Отдаем файл пользователю
-    filename = f"Applications_Ball_2026_{func.now()}.xlsx"
+    # Отдаем файл на скачивание
     return StreamingResponse(
         file_stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename=applications_ball_2026.xlsx"}
+        headers={"Content-Disposition": "attachment; filename=ball_2026_full_data.xlsx"}
     )
 
 @app.post("/admin/approve/{app_id}")
