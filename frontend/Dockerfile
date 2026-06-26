@@ -1,14 +1,13 @@
-# Шаг 1: Сборка React приложения
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
 
-# Шаг 2: Раздача статики через Nginx
-FROM nginx:stable-alpine
-# Копируем билд в папку, откуда Nginx раздает файлы
-COPY --from=builder /app/dist /usr/share/nginx/html
+FROM node:22-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+RUN npm install -g serve
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "dist", "-l", "80"]

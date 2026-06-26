@@ -7,21 +7,21 @@ services:
     container_name: ball_backend
     restart: always
     volumes:
-      - ./backend/users.db:/app/users.db  # Сохраняем БД на хосте, чтобы данные не стирались
-      - ./backend/static/uploads:/app/static/uploads # Сохраняем загруженные аватарки
+      - ./backend/users.db:/app/users.db
+      - ./backend/static/uploads:/app/static/uploads
     environment:
-      - EMAIL_APP_PASSWORD=abcdefghijklmnop # Твой пароль приложения Gmail (по желанию)
+      - EMAIL_APP_PASSWORD=abcdefghijklmnop
+    ports:
+      - "8000:8000"  # <-- ДОБАВЛЕНО! Бэкенд будет доступен на localhost:8000
     expose:
       - "8000"
 
   # Наш React фронтенд
   frontend:
-    build: ./frontend
+    build: ./frontend  # <-- ВАЖНО: у вас папка ./frontend или ./frontend/my-react-app?
     container_name: ball_frontend
     restart: always
-    expose:
-      - "80"
+    ports:
+      - "3000:80"  # <-- ИЗМЕНЕНО! Фронтенд будет доступен на localhost:3000
     depends_on:
       - backend
-
-  

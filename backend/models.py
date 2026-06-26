@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateT
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE_URL = "sqlite:///./users.db"
+DATABASE_URL = "sqlite:////app/users.db"
 
 # Создаем движок базы данных и сессию
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

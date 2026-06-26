@@ -1,21 +1,23 @@
 FROM python:3.11-slim
 
-# Установка рабочей директории
 WORKDIR /app
 
-# Отключение кэширования python-байтокода и буферизации логов
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Создаем только папки, не файлы
+RUN mkdir -p /app/static/uploads
+RUN chmod -R 777 /app/static
 
-# Установка зависимостей
+# Копируем зависимости и устанавливаем их
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода
+# Копируем код
 COPY . .
 
-# Открываем порт бэка
+# Убеждаемся, что папка для загрузок доступна для записи
+RUN chmod -R 777 /app/static
+
+# Открываем порт
 EXPOSE 8000
 
-# Запуск приложения
-CMD ["python", "app.py"]
+# Запускаем приложение
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
