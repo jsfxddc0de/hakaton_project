@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Наш FastAPI бэкенд
+  backend:
+    build: ./backend
+    container_name: ball_backend
+    restart: always
+    volumes:
+      - ./backend/users.db:/app/users.db  # Сохраняем БД на хосте, чтобы данные не стирались
+      - ./backend/static/uploads:/app/static/uploads # Сохраняем загруженные аватарки
+    environment:
+      - EMAIL_APP_PASSWORD=abcdefghijklmnop # Твой пароль приложения Gmail (по желанию)
+    expose:
+      - "8000"
+
+  # Наш React фронтенд
+  frontend:
+    build: ./frontend
+    container_name: ball_frontend
+    restart: always
+    expose:
+      - "80"
+    depends_on:
+      - backend
+
+  # Единая точка входа (Nginx)
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ball_nginx
+    restart: always
+    ports:
+      - "80:80"  # Наш сайт будет доступен по адресу http://localhost/
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro # Монтируем собранную статику фронтенда
+    depends_on:
+      - backend
+      - frontend

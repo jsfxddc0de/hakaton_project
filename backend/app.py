@@ -796,5 +796,5 @@ init_db()
 
 if __name__ == '__main__':
     import uvicorn
-    # ЗАПУСКАЕМ НА ПОРТУ 8000
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    # Меняем host на 0.0.0.0 для работы внутри Docker!
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
