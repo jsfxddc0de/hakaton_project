@@ -24,16 +24,4 @@ services:
     depends_on:
       - backend
 
-  # Единая точка входа (Nginx)
-  nginx:
-    image: nginx:stable-alpine
-    container_name: ball_nginx
-    restart: always
-    ports:
-      - "80:80"  # Наш сайт будет доступен по адресу http://localhost/
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro # Монтируем собранную статику фронтенда
-    depends_on:
-      - backend
-      - frontend
+  
