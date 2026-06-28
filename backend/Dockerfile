@@ -1,4 +1,4 @@
-FROM hakaton_project-backend:latest
+FROM python:3.11-slim
 
 WORKDIR /app
 
