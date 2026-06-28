@@ -7,7 +7,7 @@ services:
     container_name: ball_backend
     restart: always
     volumes:
-      - ./backend/users.db:/app/users.db
+      - ./backend/data:/app/data
       - ./backend/static/uploads:/app/static/uploads
     environment:
       - EMAIL_APP_PASSWORD=abcdefghijklmnop

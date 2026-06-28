@@ -7,7 +7,9 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-if os.path.exists("/app") and os.access("/app", os.W_OK):
+if os.path.exists("/app/data"):
+    DATABASE_URL = "sqlite:////app/data/users.db"
+elif os.path.exists("/app") and os.access("/app", os.W_OK):
     DATABASE_URL = "sqlite:////app/users.db"
 else:
     DATABASE_URL = f"sqlite:///{BASE_DIR}/users.db"
