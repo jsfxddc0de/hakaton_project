@@ -16,7 +16,6 @@
 }
 
 body {
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Montserrat', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-light);
   line-height: 1.6;
@@ -51,7 +50,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: 'Playfair Display', serif;
   color: var(--gold-primary);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -125,14 +123,12 @@ body {
 }
 
 .hero-subtitle-top {
-  font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   color: var(--text-light);
   margin-bottom: 5px;
 }
 
 .hero-title {
-  font-family: 'Segou UI', serif;
   font-size: 3.5rem;
   color: var(--gold-primary);
   line-height: 1.1;
@@ -143,7 +139,6 @@ body {
 }
 
 .hero-descr-title {
-  font-family: 'Playfair Display', serif;
   font-size: 1.2rem;
   font-style: italic;
   color: var(--gold-light);
@@ -171,7 +166,6 @@ body {
   font-size: 0.85rem;
   color: var(--gold-light);
   margin-bottom: 15px;
-  font-family: 'Playfair Display', serif;
 }
 
 .countdown-timer {
@@ -181,7 +175,6 @@ body {
 }
 
 .timer-item .number {
-  font-family: 'Playfair Display', serif;
   font-size: 2rem;
   color: var(--text-light);
   display: block;
@@ -203,7 +196,6 @@ body {
 
 .section-title {
   text-align: center;
-  font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   color: var(--text-light);
   text-transform: uppercase;
@@ -228,7 +220,6 @@ body {
 }
 
 .info-card h3 {
-  font-family: 'Playfair Display', serif;
   font-size: 1.2rem;
   color: var(--text-light);
   margin-bottom: 15px;
@@ -1596,85 +1587,69 @@ tbody tr:hover {
 
 /* Страница 1 (Home) - элегантный шрифт */
 .page-home {
-  font-family: 'Playfair Display', 'Inter', serif;
 }
 
 .page-home .hero-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   letter-spacing: 2px;
 }
 
 .page-home .hero-subtitle-top {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   font-style: italic;
 }
 
 /* Страница 3 (Program) - современный минималистичный шрифт */
 .page-program {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .page-program .program-title {
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   letter-spacing: 4px;
   text-transform: uppercase;
 }
 
 .page-program .schedule-content .title-event {
-  font-family: 'Inter', sans-serif;
   font-weight: 600;
 }
 
 .page-program .schedule-time .time {
-  font-family: 'Inter', sans-serif;
   font-weight: 700;
 }
 
 /* Страница 6 (Profile) - чистый профессиональный шрифт */
 .page-profile {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .page-profile .profile-title {
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
 
 .page-profile .form-input {
-  font-family: 'Inter', sans-serif;
 }
 
 .page-profile .input-group label {
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
 }
 
 /* Страница 7 (Admin) - строгий деловой шрифт */
 .page-admin {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .page-admin .hero h1 {
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   letter-spacing: -1px;
 }
 
 .page-admin .stat h2 {
-  font-family: 'Inter', sans-serif;
   font-weight: 700;
 }
 
 .page-admin table {
-  font-family: 'Inter', sans-serif;
 }
 
 .page-admin .badge {
-  font-family: 'Inter', sans-serif;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -1682,56 +1657,30 @@ tbody tr:hover {
 
 /* Страница 1 (Home) */
 .page-home {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-home .hero-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 800;
   color: #d4af37;
 }
 
 .page-home .hero-subtitle-top {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   font-style: italic;
   color: #ffffff;
 }
 
 .page-home .hero-descr-title {
-  font-family: 'Playfair Display', serif;
   font-style: italic;
   color: #f3e5ab;
 }
 
-.page-home .section-title {
-  font-family: 'Playfair Display', serif;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.page-home .info-card h3 {
-  font-family: 'Playfair Display', serif;
-  color: #ffffff;
-}
-
-.page-home .info-card p {
-  font-family: 'Playfair Display', serif;
-  color: #a0aec0;
-}
-
-.page-home .info-card ul li {
-  font-family: 'Playfair Display', serif;
-  color: #a0aec0;
-}
 
 /* Страница 3 (Program) */
 .page-program {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-program .program-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 800;
   color: #d4af37;
 }
@@ -1743,56 +1692,46 @@ tbody tr:hover {
 }
 
 .page-program .event-name {
-  font-family: 'Playfair Display', serif;
   color: #e8edf5;
 }
 
 .page-program .schedule-content .title-event {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #e8edf5;
 }
 
 .page-program .schedule-content .description {
-  font-family: 'Playfair Display', serif;
   color: #8899b4;
 }
 
 .page-program .schedule-time .time {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #d4af37;
 }
 
 /* Страница 6 (Profile) */
 .page-profile {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-profile .profile-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #d4af37;
 }
 
 .page-profile .profile-subtitle {
-  font-family: 'Playfair Display', serif;
   color: #718096;
 }
 
 .page-profile .input-group label {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #a0aec0;
 }
 
 .page-profile .form-input {
-  font-family: 'Playfair Display', serif;
   color: #ffffff;
 }
 
 .page-profile .btn-submit {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   background: linear-gradient(135deg, #d4af37 0%, #b89326 100%);
   color: #070b13;
@@ -1800,50 +1739,41 @@ tbody tr:hover {
 
 /* Страница 7 (Admin) */
 .page-admin {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-admin .badge {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #ffd487;
 }
 
 .page-admin .hero h1 {
-  font-family: 'Playfair Display', serif;
   font-weight: 800;
   color: #ffffff;
 }
 
 .page-admin .stat h2 {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #ffffff;
 }
 
 .page-admin .stat span {
-  font-family: 'Playfair Display', serif;
   color: #96a1bc;
 }
 
 .page-admin th {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #8e99b8;
 }
 
 .page-admin td {
-  font-family: 'Playfair Display', serif;
   color: #ffffff;
 }
 
 .page-admin .status {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
 }
 
 .page-admin .export-btn {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   background: linear-gradient(135deg, #f7d693, #d4aa59);
   color: #111;
@@ -1855,11 +1785,9 @@ tbody tr:hover {
 
 /* ----- СТРАНИЦА 1 (HOME) ----- */
 .page-home {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-home .hero-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 900;
   font-size: 3.5rem;
   color: #d4af37;
@@ -1868,7 +1796,6 @@ tbody tr:hover {
 }
 
 .page-home .hero-subtitle-top {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   font-style: italic;
   color: #ffffff;
@@ -1876,7 +1803,6 @@ tbody tr:hover {
 }
 
 .page-home .hero-descr-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   font-style: italic;
   color: #f3e5ab;
@@ -1884,14 +1810,12 @@ tbody tr:hover {
 }
 
 .page-home .hero-text {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #a0aec0;
   font-size: 0.95rem;
 }
 
 .page-home .section-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #ffffff;
   font-size: 1.8rem;
@@ -1899,45 +1823,38 @@ tbody tr:hover {
 }
 
 .page-home .info-card h3 {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #ffffff;
   font-size: 1.2rem;
 }
 
 .page-home .info-card p {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #a0aec0;
   font-size: 0.9rem;
 }
 
 .page-home .info-card ul li {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #a0aec0;
   font-size: 0.9rem;
 }
 
 .page-home .countdown-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #f3e5ab;
 }
 
 .page-home .timer-item .number {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #ffffff;
 }
 
 /* ----- СТРАНИЦА 3 (PROGRAM) ----- */
 .page-program {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-program .program-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 900;
   font-size: 36px;
   color: #d4af37;
@@ -1952,71 +1869,60 @@ tbody tr:hover {
 }
 
 .page-program .event-name {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #e8edf5;
   font-size: 22px;
 }
 
 .page-program .event-info .info-item {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #8899b4;
 }
 
 .page-program .event-info .info-item .value {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #e8edf5;
 }
 
 .page-program .schedule-content .title-event {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #e8edf5;
   font-size: 16px;
 }
 
 .page-program .schedule-content .description {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #8899b4;
   font-size: 13px;
 }
 
 .page-program .schedule-time .time {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #d4af37;
   font-size: 18px;
 }
 
 .page-program .schedule-time .duration {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #4a5a7a;
   font-size: 11px;
 }
 
 .page-program .section-divider {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #2a4060;
 }
 
 .page-program .btn-back {
-  font-family: 'Playfair Display', serif;
   font-weight: 500;
   color: #8899b4;
 }
 
 /* ----- СТРАНИЦА 6 (PROFILE) ----- */
 .page-profile {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-profile .profile-title {
-  font-family: 'Playfair Display', serif;
   font-weight: 800;
   font-size: 2.2rem;
   color: #d4af37;
@@ -2024,34 +1930,29 @@ tbody tr:hover {
 }
 
 .page-profile .profile-subtitle {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #718096;
   font-size: 0.95rem;
 }
 
 .page-profile .input-group label {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   color: #a0aec0;
   font-size: 0.9rem;
 }
 
 .page-profile .form-input {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #ffffff;
   font-size: 0.95rem;
 }
 
 .page-profile .form-input::placeholder {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #4a5568;
 }
 
 .page-profile .btn-submit {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 1rem;
   background: linear-gradient(135deg, #d4af37 0%, #b89326 100%);
@@ -2059,18 +1960,15 @@ tbody tr:hover {
 }
 
 .page-profile .avatar-placeholder {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #d4af37;
 }
 
 /* ----- СТРАНИЦА 7 (ADMIN) ----- */
 .page-admin {
-  font-family: 'Playfair Display', 'Times New Roman', serif;
 }
 
 .page-admin .badge {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
   font-size: 13px;
   color: #ffd487;
@@ -2079,7 +1977,6 @@ tbody tr:hover {
 }
 
 .page-admin .hero h1 {
-  font-family: 'Playfair Display', serif;
   font-weight: 800;
   font-size: 48px;
   color: #ffffff;
@@ -2087,63 +1984,53 @@ tbody tr:hover {
 }
 
 .page-admin .hero p {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #95a0bd;
   font-size: 0.95rem;
 }
 
 .page-admin .stat h2 {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 36px;
   color: #ffffff;
 }
 
 .page-admin .stat span {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #96a1bc;
 }
 
 .page-admin .table-header h3 {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #ffffff;
 }
 
 .page-admin .search {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   background: #0d1736;
   color: white;
 }
 
 .page-admin .search::placeholder {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #4a5568;
 }
 
 .page-admin th {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   color: #8e99b8;
 }
 
 .page-admin td {
-  font-family: 'Playfair Display', serif;
   font-weight: 400;
   color: #ffffff;
 }
 
 .page-admin .status {
-  font-family: 'Playfair Display', serif;
   font-weight: 600;
 }
 
 .page-admin .export-btn {
-  font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 1rem;
   background: linear-gradient(135deg, #f7d693, #d4aa59);
@@ -2151,5 +2038,101 @@ tbody tr:hover {
 }
 
 .page-admin .action {
-  font-family: 'Playfair Display', serif;
+}
+
+/* ===== GLOBAL HEADINGS & AESTHETIC FONTS ===== */
+h1, h2, h3, h4, h5, h6,
+.hero-title,
+.hero-subtitle-top,
+.hero-descr-title,
+.modern-title,
+.location-title,
+.cyber-title,
+.program-title,
+.profile-title,
+.section-title {
+  font-family: 'Montserrat', 'Inter', 'Segoe UI', -apple-system, sans-serif !important;
+}
+
+/* ===== UNIFIED PREMIUM HEADINGS STYLING ===== */
+.hero-title,
+.modern-title,
+.location-title,
+.cyber-title,
+.program-title,
+.profile-title {
+  font-size: 3.2rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -1.5px !important;
+  background: linear-gradient(135deg, #dfb743 0%, #fff0a5 50%, #dfb743 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  margin-bottom: 20px !important;
+}
+
+/* ===== PAGE ENTRY TRANSITIONS ===== */
+.page-home,
+.about-modern-section,
+.page-program,
+.location-section,
+.contacts-cyber-section,
+.page-profile,
+.page-admin {
+  animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== MODERN ROUNDED CORNERS & HOVER EFFECTS ===== */
+.info-card,
+.modern-card,
+.schedule-item,
+.location-info,
+.location-map-container,
+.timeline-content-card,
+.profile-card-left,
+.profile-content-right > div,
+.stat,
+.table-card,
+.form-input,
+select,
+textarea,
+button,
+.btn-submit,
+.export-btn,
+.action {
+  border-radius: 16px !important; /* Premium modern rounding */
+  transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+/* Smooth scale and glow effect on card hover */
+.info-card:hover,
+.modern-card:hover,
+.schedule-item:hover,
+.timeline-content-card:hover,
+.profile-card-left:hover,
+.profile-content-right > div:hover,
+.stat:hover,
+.table-card:hover {
+  transform: translateY(-6px) scale(1.01) !important;
+  box-shadow: 0 15px 35px rgba(223, 183, 67, 0.1) !important;
+  border-color: rgba(223, 183, 67, 0.25) !important;
+}
+
+/* Glow effects for inputs on focus */
+.form-input:focus,
+select:focus,
+textarea:focus {
+  border-color: #dfb743 !important;
+  box-shadow: 0 0 15px rgba(223, 183, 67, 0.2) !important;
 }

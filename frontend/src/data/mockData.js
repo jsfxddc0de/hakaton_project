@@ -107,11 +107,40 @@ export const contactsData = [
 ];
 
 export const profileData = {
-  fullName: '',
-  class: '',
-  email: '',
-  gender: '',
-  city: ''
+  fullName: 'Александра Соколова',
+  class_group: '10Б класс',
+  email: 'sasha.sokolova@mail.ru',
+  phone: '+7 (920) 123-45-67',
+  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+  role: 'user', // 'user' or 'candidate' or 'admins'
+  applications: [
+    {
+      id: 1,
+      event_id: 1,
+      title: 'Осенний Бал 2026',
+      date: '31 октября 2026 в 18:00',
+      location: 'Главный Колонный Зал Трапезной',
+      wishes: 'Хочу танцевать вальс, нужен партнер.',
+      status: 'approved'
+    },
+    {
+      id: 2,
+      event_id: 2,
+      title: 'Мастер-класс по венскому вальсу',
+      date: '24 октября 2026 в 15:00',
+      location: 'Малый репетиционный зал',
+      wishes: '',
+      status: 'pending'
+    }
+  ],
+  availableEvents: [
+    {
+      id: 3,
+      title: "Творческий вечер поэзии 'Листопад'",
+      date: "05 ноября 2026 в 19:00",
+      location: "Литературная гостиная"
+    }
+  ]
 };
 
 export const adminStats = [

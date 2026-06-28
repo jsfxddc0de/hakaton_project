@@ -3,7 +3,14 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateT
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE_URL = "sqlite:////app/users.db"
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+if os.path.exists("/app") and os.access("/app", os.W_OK):
+    DATABASE_URL = "sqlite:////app/users.db"
+else:
+    DATABASE_URL = f"sqlite:///{BASE_DIR}/users.db"
 
 # Создаем движок базы данных и сессию
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

@@ -1,21 +1,47 @@
-import React, { useState } from 'react';
-import { adminStats, adminRequests } from '../../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { adminApi } from '../../data/api';
 
 function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [requests, setRequests] = useState(adminRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredRequests = requests.filter((req) =>
-    req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    req.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleExport = () => {
-    alert('Экспорт в Excel (mock)');
+  const loadDashboard = async () => {
+    try {
+      const data = await adminApi.getDashboard();
+      setRequests(data.requests || []);
+    } catch (e) {
+      alert('Ошибка загрузки дашборда: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEdit = (id) => {
-    alert(`Редактирование заявки ${id}`);
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const handleApprove = async (id) => {
+    try {
+      await adminApi.approve(id);
+      loadDashboard();
+    } catch (err) {
+      alert('Ошибка при одобрении заявки: ' + err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await adminApi.reject(id);
+      loadDashboard();
+    } catch (err) {
+      alert('Ошибка при отклонении заявки: ' + err.message);
+    }
+  };
+
+  const handleExport = () => {
+    // Open backend excel download route in new window
+    window.open('http://localhost:8000/admin/export/excel', '_blank');
   };
 
   const getStatusClass = (status) => {
@@ -26,6 +52,27 @@ function Admin() {
     };
     return map[status] || '';
   };
+
+  const dynamicStats = [
+    { value: requests.length, label: 'Всего заявок' },
+    { value: requests.filter(r => r.status === 'Подтверждена').length, label: 'Подтверждено' },
+    { value: requests.filter(r => r.status === 'Новая').length, label: 'Новых' },
+    { value: requests.filter(r => r.status === 'Отклонена').length, label: 'Отклонено' }
+  ];
+
+  const filteredRequests = requests.filter((req) =>
+    (req.name && req.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (req.id && req.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (req.email && req.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: '#dfb743', fontWeight: 'bold' }}>
+        Загрузка панели администратора...
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard page-admin">
@@ -41,7 +88,7 @@ function Admin() {
       </div>
 
       <div className="stats">
-        {adminStats.map((stat, index) => (
+        {dynamicStats.map((stat, index) => (
           <div className="stat" key={index}>
             <h2>{stat.value}</h2>
             <span>{stat.label}</span>
@@ -68,7 +115,7 @@ function Admin() {
               <th>Email</th>
               <th>Статус</th>
               <th>Дата</th>
-              <th></th>
+              <th>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -85,9 +132,46 @@ function Admin() {
                 </td>
                 <td>{req.date}</td>
                 <td>
-                  <button className="action" onClick={() => handleEdit(req.id)}>
-                    <i className="fa-solid fa-pen"></i>
-                  </button>
+                  {req.status === 'Новая' ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => handleApprove(req.id)}
+                        style={{
+                          backgroundColor: 'rgba(0, 255, 140, 0.12)',
+                          color: '#65ffb5',
+                          border: '1px solid rgba(0, 255, 140, 0.3)',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Одобрить заявку"
+                      >
+                        ✓
+                      </button>
+                      <button 
+                        onClick={() => handleReject(req.id)}
+                        style={{
+                          backgroundColor: 'rgba(255, 90, 90, 0.12)',
+                          color: '#ff9d9d',
+                          border: '1px solid rgba(255, 90, 90, 0.3)',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Отклонить заявку"
+                      >
+                        ✗
+                      </button>
+                    </div>
+                  ) : (
+                    <span style={{ color: '#8e99b8', fontSize: '0.85rem' }}>Решено</span>
+                  )}
                 </td>
               </tr>
             ))}

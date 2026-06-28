@@ -41,6 +41,21 @@ app = FastAPI(
 # Поддержка сессий (cookie-session)
 app.add_middleware(SessionMiddleware, secret_key="super_secret_key_for_sessions_and_profile")
 
+# CORS middleware
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Настройка путей для статики и шаблонов
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -331,14 +346,19 @@ async def register_post(
         f"Пожалуйста, введите его на странице верификации для завершения регистрации."
     )
     
+    # Всегда печатаем код в консоль для удобства локального тестирования и отладки
+    print(f"\n[DEBUG VERIFICATION CODE] Email: {email} | Code: {verification_code}\n")
+
     # Отправляем письмо пользователю
     email_sent = send_email(email, subject, body)
     
     if not email_sent:
-        # Если почта не отправилась вообще (например, неверный email), пишем ошибку
-        return templates.TemplateResponse(request=request, name="register.html", context={"error": "Не удалось отправить код подтверждения. Проверьте правильность Email."})
-
-    flash(request, "Код подтверждения отправлен на вашу почту!", "info")
+        # Если почта не отправилась (например, нет интернета или неверный пароль SMTP),
+        # мы предупреждаем пользователя, но всё равно перенаправляем на страницу ввода кода
+        flash(request, "Не удалось отправить письмо на почту. Код подтверждения выведен в консоль сервера для отладки.", "warning")
+    else:
+        flash(request, "Код подтверждения отправлен на вашу почту!", "info")
+        
     # Перенаправляем на страницу ввода кода
     return RedirectResponse(request.url_for("verify_get"), status_code=status.HTTP_303_SEE_OTHER)
 
@@ -789,6 +809,305 @@ async def api_candidates(request: Request, db: Session = Depends(get_db)):
         return JSONResponse(status_code=401, content={'error': 'Unauthorized', 'message': 'Admin role required'})
     users = db.query(User).filter(User.role == 'candidate').order_by(User.id.desc()).all()
     return [serialize_user(u, request) for u in users]
+
+
+# --- REST API: AUTHENTICATION & SESSION ---
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class RegisterRequest(BaseModel):
+    fio: str
+    class_group: str
+    email: EmailStr
+    password: str
+    phone: Optional[str] = ""
+    wishes: Optional[str] = ""
+
+class VerifyRequest(BaseModel):
+    code: str
+
+class ApplyRequest(BaseModel):
+    event_id: int
+    wishes: Optional[str] = ""
+
+class ProfileUpdateRequest(BaseModel):
+    phone: Optional[str] = ""
+
+@app.get("/api/auth/me", tags=["Auth API"])
+async def api_auth_me(request: Request, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    user = db.query(User).filter(User.email == user_email).first()
+    if not user:
+        request.session.clear()
+        return JSONResponse(status_code=401, content={"error": "User not found"})
+    return serialize_user(user, request)
+
+@app.post("/api/auth/login", tags=["Auth API"])
+async def api_auth_login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email.strip()).first()
+    if user and user.check_password(data.password):
+        request.session.update({'user_email': user.email, 'user_fio': user.fio, 'user_role': user.role})
+        return serialize_user(user, request)
+    return JSONResponse(status_code=400, content={"error": "Неверный Email или пароль."})
+
+@app.post("/api/auth/register", tags=["Auth API"])
+async def api_auth_register(request: Request, data: RegisterRequest, db: Session = Depends(get_db)):
+    email = data.email.strip()
+    if db.query(User).filter(User.email == email).first():
+        return JSONResponse(status_code=400, content={"error": "Этот Email уже зарегистрирован."})
+
+    verification_code = str(random.randint(100000, 999999))
+    from werkzeug.security import generate_password_hash
+    hashed_password = generate_password_hash(data.password)
+
+    client_host = request.client.host if request.client else "127.0.0.1"
+    request.session["temp_register"] = {
+        "fio": data.fio.strip(),
+        "class_group": data.class_group.strip(),
+        "email": email,
+        "password": hashed_password,
+        "phone": data.phone.strip(),
+        "wishes": data.wishes.strip(),
+        "ip_address": request.headers.get('X-Forwarded-For', client_host),
+        "code": verification_code
+    }
+
+    print(f"\n[DEBUG VERIFICATION CODE] Email: {email} | Code: {verification_code}\n")
+
+    subject = "✉️ Код подтверждения регистрации — Осенний Бал 2026"
+    body = (
+        f"Здравствуйте, {data.fio}!\n\n"
+        f"Вы начали регистрацию на Осенний Бал 2026.\n"
+        f"Ваш одноразовый код подтверждения: {verification_code}\n\n"
+        f"Пожалуйста, введите его на странице верификации."
+    )
+    
+    send_email(email, subject, body)
+    return {"message": "Verification code sent."}
+
+@app.post("/api/auth/verify", tags=["Auth API"])
+async def api_auth_verify(request: Request, data: VerifyRequest, db: Session = Depends(get_db)):
+    temp_data = request.session.get("temp_register")
+    if not temp_data:
+        return JSONResponse(status_code=400, content={"error": "Сессия регистрации истекла или не найдена."})
+
+    if data.code.strip() != temp_data["code"]:
+        return JSONResponse(status_code=400, content={"error": "Неверный код подтверждения."})
+
+    new_user = User(
+        fio=temp_data["fio"],
+        class_group=temp_data["class_group"],
+        email=temp_data["email"],
+        password=temp_data["password"],
+        phone=temp_data["phone"],
+        ip_address=temp_data["ip_address"],
+        role='candidate'
+    )
+    db.add(new_user)
+    db.flush()
+
+    db.add(Application(
+        user_email=temp_data["email"], 
+        event_id=1, 
+        wishes=temp_data["wishes"], 
+        status='pending'
+    ))
+    db.commit()
+
+    notify_admin_new_app(temp_data["fio"], "Осенний Бал 2026", temp_data["email"])
+
+    request.session.update({
+        'user_email': temp_data["email"], 
+        'user_fio': temp_data["fio"], 
+        'user_role': 'candidate'
+    })
+    request.session.pop("temp_register", None)
+
+    return serialize_user(new_user, request)
+
+@app.post("/api/auth/logout", tags=["Auth API"])
+async def api_auth_logout(request: Request):
+    request.session.clear()
+    return {"message": "Logged out"}
+
+# --- REST API: SONGS & VOTING ---
+@app.get("/api/songs", tags=["Songs API"])
+async def api_get_songs(request: Request, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    total_votes = db.query(Vote).count()
+    votes_raw = db.query(Vote.song_id, func.count(Vote.user_email)).group_by(Vote.song_id).all()
+    votes_dict = {song_id: count for song_id, count in votes_raw}
+
+    user_vote = db.query(Vote).filter(Vote.user_email == user_email).first() if user_email else None
+    user_vote_id = user_vote.song_id if user_vote else None
+
+    songs_stats = []
+    for s_id, s_info in SONGS.items():
+        count = votes_dict.get(s_id, 0)
+        percent = round((count / total_votes * 100), 1) if total_votes > 0 else 0
+        songs_stats.append({
+            'id': s_id, 'title': s_info['title'], 'desc': s_info['desc'],
+            'votes': count, 'percent': percent, 'is_current': (s_id == user_vote_id),
+            'audio_url': s_info['audio_url']
+        })
+    return {"songs": songs_stats, "total_votes": total_votes}
+
+@app.post("/api/songs/vote/{song_id}", tags=["Songs API"])
+async def api_vote_song(request: Request, song_id: int, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    user_role = request.session.get('user_role')
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Пожалуйста, войдите в систему."})
+    if user_role == 'candidate':
+        return JSONResponse(status_code=403, content={"error": "Голосование доступно только подтвержденным участникам (роль User)!"})
+
+    vote_obj = db.query(Vote).filter(Vote.user_email == user_email).first()
+    if vote_obj:
+        vote_obj.song_id = song_id
+    else:
+        db.add(Vote(user_email=user_email, song_id=song_id))
+    db.commit()
+    return {"message": "Голос успешно учтен"}
+
+# --- REST API: PROFILE ---
+@app.get("/api/profile", tags=["Profile API"])
+async def api_get_profile(request: Request, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    user = db.query(User).filter(User.email == user_email).first()
+    user_apps = db.query(Application).filter(Application.user_email == user_email).order_by(Application.id.desc()).all()
+    
+    mapped_apps = []
+    applied_ids = []
+    for app_obj in user_apps:
+        mapped_apps.append({
+            "id": app_obj.id, "title": app_obj.event.title, "date": app_obj.event.date_str,
+            "location": app_obj.event.location, "status": app_obj.status, "wishes": app_obj.wishes
+        })
+        applied_ids.append(app_obj.event_id)
+
+    all_events = db.query(Event).filter(~Event.id.in_(applied_ids)).all() if applied_ids else db.query(Event).all()
+    available_events = [{"id": e.id, "title": e.title, "date": e.date_str, "location": e.location} for e in all_events]
+
+    avatar_url = str(request.url_for('static', path=f'uploads/{user.avatar}')) if user.avatar else f"https://ui-avatars.com/api/?name={user.fio}&background=random&size=128"
+
+    return {
+        "fullName": user.fio,
+        "class_group": user.class_group,
+        "email": user.email,
+        "phone": user.phone or "",
+        "avatar": avatar_url,
+        "role": user.role,
+        "applications": mapped_apps,
+        "availableEvents": available_events
+    }
+
+@app.post("/api/profile/update", tags=["Profile API"])
+async def api_profile_update(request: Request, data: ProfileUpdateRequest, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    user = db.query(User).filter(User.email == user_email).first()
+    user.phone = data.phone.strip()
+    db.commit()
+    return {"message": "Профиль обновлен"}
+
+@app.post("/api/profile/apply", tags=["Profile API"])
+async def api_profile_apply(request: Request, data: ApplyRequest, db: Session = Depends(get_db)):
+    user_email = request.session.get('user_email')
+    if not user_email:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    user = db.query(User).filter(User.email == user_email).first()
+    
+    if db.query(Application).filter(Application.user_email == user_email, Application.event_id == data.event_id).first():
+        return JSONResponse(status_code=400, content={"error": "Вы уже подали заявку на это событие!"})
+        
+    db.add(Application(user_email=user_email, event_id=data.event_id, wishes=data.wishes.strip(), status='pending'))
+    db.commit()
+    
+    event_obj = db.query(Event).filter(Event.id == data.event_id).first()
+    notify_admin_new_app(user.fio, event_obj.title, user_email)
+    return {"message": "Заявка успешно подана"}
+
+# --- REST API: ADMIN ---
+@app.get("/api/admin/dashboard", tags=["Admin API"])
+async def api_admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    apps_raw = db.query(Application).order_by(Application.id.desc()).all()
+    apps = []
+    for a in apps_raw:
+        app_data = {
+            'id': f"#{a.id:03d}",
+            'name': a.user.fio if a.user else "Удален",
+            'class': a.user.class_group if a.user else "—",
+            'email': a.user_email,
+            'status': a.status,
+            'date': a.created_at.strftime('%d.%m.%Y')
+        }
+        status_map = {
+            'pending': 'Новая',
+            'approved': 'Подтверждена',
+            'rejected': 'Отклонена'
+        }
+        app_data['status'] = status_map.get(app_data['status'], app_data['status'])
+        apps.append(app_data)
+
+    return {"requests": apps}
+
+@app.post("/api/admin/approve/{app_id_str}", tags=["Admin API"])
+async def api_admin_approve(request: Request, app_id_str: str, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    try:
+        app_id = int(app_id_str.replace('#', ''))
+    except ValueError:
+        return JSONResponse(status_code=400, content={"error": "Неверный формат ID"})
+
+    app_obj = db.query(Application).filter(Application.id == app_id).first()
+    if app_obj:
+        app_obj.status = 'approved'
+        user = db.query(User).filter(User.email == app_obj.user_email).first()
+        if user and user.role == 'candidate':
+            user.role = 'user'
+        db.commit()
+        notify_user_app_status(app_obj.user_email, user.fio, app_obj.event.title, 'approved')
+        return {"message": f"Заявка #{app_id} одобрена"}
+    return JSONResponse(status_code=404, content={"error": "Заявка не найдена"})
+
+@app.post("/api/admin/reject/{app_id_str}", tags=["Admin API"])
+async def api_admin_reject(request: Request, app_id_str: str, db: Session = Depends(get_db)):
+    if not verify_admin(request):
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    try:
+        app_id = int(app_id_str.replace('#', ''))
+    except ValueError:
+        return JSONResponse(status_code=400, content={"error": "Неверный формат ID"})
+
+    app_obj = db.query(Application).filter(Application.id == app_id).first()
+    if app_obj:
+        app_obj.status = 'rejected'
+        if app_obj.event_id == 1:
+            db.query(Vote).filter(Vote.user_email == app_obj.user_email).delete()
+
+        approved_count = db.query(Application).filter(Application.user_email == app_obj.user_email, Application.status == 'approved').count()
+        user = db.query(User).filter(User.email == app_obj.user_email).first()
+        if approved_count == 0 and user and user.role == 'user':
+            user.role = 'candidate'
+
+        db.commit()
+        notify_user_app_status(app_obj.user_email, user.fio, app_obj.event.title, 'rejected')
+        return {"message": f"Заявка #{app_id} отклонена"}
+    return JSONResponse(status_code=404, content={"error": "Заявка не найдена"})
 
 
 # --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ПРИ СТАРТЕ ---

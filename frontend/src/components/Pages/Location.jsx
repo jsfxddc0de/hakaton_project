@@ -44,6 +44,45 @@ function Location() {
           ></iframe>
         </div>
       </div>
+
+      <div className="container" style={{ marginTop: '50px', paddingBottom: '50px' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.5fr 1fr',
+          gap: '30px',
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: '16px',
+          padding: '40px'
+        }}>
+          <div>
+            <h3 style={{ color: '#dfb743', marginBottom: '20px', fontSize: '1.5rem' }}>Парковка и Логистика</h3>
+            <p style={{ color: '#a0aec0', fontSize: '0.95rem', lineHeight: '1.7', marginBottom: '15px' }}>
+              Для всех участников бала организован бесплатный охраняемый паркинг непосредственно у здания Колонного Зала. При въезде на территорию необходимо предъявить электронный билет или назвать свои ФИО сотруднику охраны.
+            </p>
+            <p style={{ color: '#a0aec0', fontSize: '0.95rem', lineHeight: '1.7' }}>
+              От станций метро каждые 15 минут будут курсировать комфортабельные шаттлы с логотипом «Осенний Бал 2026». Проезд бесплатный по пригласительным билетам.
+            </p>
+          </div>
+          <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.08)', paddingLeft: '30px' }}>
+            <h3 style={{ color: '#dfb743', marginBottom: '20px', fontSize: '1.5rem' }}>Что взять с собой</h3>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <li style={{ display: 'flex', gap: '10px', fontSize: '0.95rem', color: '#a0aec0' }}>
+                <span style={{ color: '#dfb743' }}>✓</span> Пригласительный QR-код (в телефоне или распечатанный)
+              </li>
+              <li style={{ display: 'flex', gap: '10px', fontSize: '0.95rem', color: '#a0aec0' }}>
+                <span style={{ color: '#dfb743' }}>✓</span> Документ, удостоверяющий личность
+              </li>
+              <li style={{ display: 'flex', gap: '10px', fontSize: '0.95rem', color: '#a0aec0' }}>
+                <span style={{ color: '#dfb743' }}>✓</span> Сменную танцевальную обувь (обязательное требование зала)
+              </li>
+              <li style={{ display: 'flex', gap: '10px', fontSize: '0.95rem', color: '#a0aec0' }}>
+                <span style={{ color: '#dfb743' }}>✓</span> Праздничную маску для маскарада
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

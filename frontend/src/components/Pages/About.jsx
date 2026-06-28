@@ -43,6 +43,46 @@ function About() {
           ))}
         </div>
       </div>
+
+      <div className="modern-container" style={{ marginTop: '70px', paddingBottom: '70px', display: 'block' }}>
+        <h2 className="modern-title" style={{ textAlign: 'center', marginBottom: '40px' }}>
+          Танцевальная <span className="gold-gradient">программа бала</span>
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '24px'
+        }}>
+          <div className="modern-card glass-effect" style={{ padding: '30px' }}>
+            <span style={{ fontSize: '2rem' }}>👑</span>
+            <h3 style={{ margin: '15px 0 10px', color: '#dfb743' }}>Гранд-Полонез</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              Традиционный танец-шествие, открывающий вечер. В нем участвуют все гости, создавая величественную атмосферу.
+            </p>
+          </div>
+          <div className="modern-card glass-effect" style={{ padding: '30px' }}>
+            <span style={{ fontSize: '2rem' }}>💃</span>
+            <h3 style={{ margin: '15px 0 10px', color: '#dfb743' }}>Венский Вальс</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              Сердце и классика любого бала. Кружащиеся пары, прекрасная музыка Чайковского и Доги, абсолютное слияние движения и звука.
+            </p>
+          </div>
+          <div className="modern-card glass-effect" style={{ padding: '30px' }}>
+            <span style={{ fontSize: '2rem' }}>⚡</span>
+            <h3 style={{ margin: '15px 0 10px', color: '#dfb743' }}>Озорная Полька</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              Веселый, быстрый и легкий танец с подскоками. Поднимает настроение и заряжает бодростью каждого участника.
+            </p>
+          </div>
+          <div className="modern-card glass-effect" style={{ padding: '30px' }}>
+            <span style={{ fontSize: '2rem' }}>🤝</span>
+            <h3 style={{ margin: '15px 0 10px', color: '#dfb743' }}>Фигурная Кадриль</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              Изящный танец-игра, где участники постоянно меняются партнерами, общаются и выполняют забавные фигуры.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
