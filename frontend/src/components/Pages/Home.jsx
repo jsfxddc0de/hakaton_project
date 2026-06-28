@@ -1,7 +1,7 @@
 import React from 'react';
 import Countdown from '../Common/Countdown';
 
-function Home() {
+function Home({ user, onNavigate }) {
   return (
     <section className="hero page-home">
       <div className="hero-bg"></div>
@@ -16,6 +16,36 @@ function Home() {
             и незабываемые впечатления!
           </p>
           <Countdown targetDate={new Date(2026, 5, 28, 18, 0, 0)} />
+
+          <div className="hero-ctas" style={{ display: 'flex', gap: '20px', justifyContent: 'flex-start', marginTop: '35px' }}>
+            {user ? (
+              user.role === 'admins' ? (
+                <button className="btn-submit" style={{ padding: '12px 30px', fontSize: '1rem', fontWeight: 'bold' }} onClick={() => onNavigate('admin')}>
+                  Панель администратора
+                </button>
+              ) : (
+                <button className="btn-submit" style={{ padding: '12px 30px', fontSize: '1rem', fontWeight: 'bold' }} onClick={() => onNavigate('profile')}>
+                  Перейти в личный кабинет
+                </button>
+              )
+            ) : (
+              <>
+                <button className="btn-submit" style={{ padding: '12px 30px', fontSize: '1rem', fontWeight: 'bold' }} onClick={() => onNavigate('register')}>
+                  Зарегистрироваться
+                </button>
+                <button className="btn-submit" style={{
+                  padding: '12px 30px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#fff'
+                }} onClick={() => onNavigate('login')}>
+                  Войти
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

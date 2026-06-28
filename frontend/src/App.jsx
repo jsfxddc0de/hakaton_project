@@ -58,7 +58,7 @@ function App() {
     }
 
     switch(currentPage) {
-      case 'home': return <Home />;
+      case 'home': return <Home user={user} onNavigate={setCurrentPage} />;
       case 'about': return <About />;
       case 'program': return <Program />;
       case 'location': return <Location />;
