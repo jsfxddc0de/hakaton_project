@@ -97,18 +97,20 @@ def init_db():
             db.commit()
 
         # Создаем администратора по умолчанию
-        if db.query(User).filter(User.role == 'admins').count() == 0:
-            admin_pass_hash = generate_password_hash("1488")
-            admin_user = User(
-                fio='Главный Администратор',
-                class_group='Оргкомитет',
-                email='admin@ball.ru',
-                password=admin_pass_hash,
-                phone='—',
-                ip_address='127.0.0.1',
-                role='admins'
-            )
-            db.add(admin_user)
-            db.commit()
+        admin_emails = ['admin@ball.ru', 'admin@admin.ru']
+        for email in admin_emails:
+            if db.query(User).filter(User.email == email).count() == 0:
+                pwd = "1488" if email == 'admin@ball.ru' else "admin"
+                admin_user = User(
+                    fio='Главный Администратор' if email == 'admin@ball.ru' else 'Администратор Тест',
+                    class_group='Оргкомитет',
+                    email=email,
+                    password=generate_password_hash(pwd),
+                    phone='—',
+                    ip_address='127.0.0.1',
+                    role='admins'
+                )
+                db.add(admin_user)
+                db.commit()
     finally:
         db.close()

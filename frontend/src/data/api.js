@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8000/api';
+const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const API_BASE = `http://${hostname}:8000/api`;
 
 async function request(path, options = {}) {
   const url = `${API_BASE}${path}`;

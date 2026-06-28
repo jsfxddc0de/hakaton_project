@@ -1,4 +1,4 @@
-FROM mirror.gcr.io/library/python:3.11-slim
+FROM hakaton_project-backend:latest
 
 WORKDIR /app
 

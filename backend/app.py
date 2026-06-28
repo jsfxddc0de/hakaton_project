@@ -166,7 +166,7 @@ def send_email(to_email, subject, body):
         context = ssl.create_default_context()
         print(f"📧 Попытка отправки письма на {to_email} через сервера Google...")
         
-        with smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT, context=context) as smtp:
+        with smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT, context=context, timeout=3.0) as smtp:
             smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
             smtp.send_message(msg)
             

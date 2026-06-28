@@ -69,7 +69,7 @@ function App() {
       case 'profile': 
         return user ? <Profile user={user} onLogout={handleLogout} /> : <Login onLoginSuccess={handleLoginSuccess} onNavigate={setCurrentPage} />;
       case 'admin': 
-        return user && user.role === 'admins' ? <Admin onLogout={handleLogout} /> : <Home />;
+        return user && user.role === 'admins' ? <Admin onLogout={handleLogout} /> : <Login onLoginSuccess={handleLoginSuccess} onNavigate={setCurrentPage} />;
       default: return <Home />;
     }
   };
